@@ -42,7 +42,7 @@ async function migrate(){
   if(process.env.ADMIN_EMAIL&&process.env.ADMIN_PASSWORD){if(!service?.api_key)throw new Error('A API não retornou a chave necessária ao provisionamento do proprietário.');const result=await bootstrapOwner({url:requireValue('NEXT_PUBLIC_SUPABASE_URL'),serviceKey:service.api_key,publicKey:requireValue('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'),email:process.env.ADMIN_EMAIL,password:process.env.ADMIN_PASSWORD});console.log(result.created?'PASS administrador criado e login verificado.':'PASS administrador já provisionado; nenhuma senha alterada.');}
 
  }
- if(process.env.ADMIN_EMAIL&&!process.env.ADMIN_PASSWORD)console.log('PENDENTE ADMIN_PASSWORD: administrador ainda não foi criado.');
+ if(process.env.ADMIN_EMAIL&&!process.env.ADMIN_PASSWORD)console.log('INFO ADMIN_PASSWORD ausente: bootstrap inicial não executado; contas existentes não são alteradas.');
 }
 async function deploy(){
  requireValue('VERCEL_PROJECT_ID');const project=await vercel(`/v9/projects/${encodeURIComponent(projectId)}`);
