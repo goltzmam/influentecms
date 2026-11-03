@@ -1,5 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import {migrationSql} from './migration-sql.mjs';
+import {bootstrapOwner} from './bootstrap-owner.mjs';
 const vercelBase='https://api.vercel.com';
 const projectId=process.env.VERCEL_PROJECT_ID;
 function requireValue(name){if(!process.env[name])throw new Error(`Configure ${name} pelo gerenciador seguro de segredos.`);return process.env[name];}
@@ -13,7 +14,7 @@ function vercel(path,options){const team=process.env.VERCEL_TEAM_ID;return api(v
 function supabaseRef(){const url=new URL(requireValue('NEXT_PUBLIC_SUPABASE_URL'));if(url.protocol!=='https:'||!url.hostname.endsWith('.supabase.co'))throw new Error('Use um projeto Supabase hospedado para publicação.');return url.hostname.split('.')[0];}
 async function configure(){
  requireValue('VERCEL_PROJECT_ID');
- await vercel(`/v9/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:{framework:'nextjs',nodeVersion:'24.x',buildCommand:'npm run build',installCommand:'npm ci',rootDirectory:null,outputDirectory:null,autoExposeSystemEnvs:true}});
+ await vercel(`/v9/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:{framework:'nextjs',nodeVersion:'24.x',buildCommand:'npm run build:vercel',installCommand:'npm ci',rootDirectory:null,outputDirectory:null,autoExposeSystemEnvs:true}});
  const {domains=[]}=await vercel(`/v9/projects/${encodeURIComponent(projectId)}/domains`);
  const host=domains.find(d=>d.name.endsWith('.vercel.app'))?.name;
  const appUrl=process.env.APP_URL||(host?`https://${host}`:undefined);if(!appUrl||!appUrl.startsWith('https://'))throw new Error('Configure APP_URL HTTPS para a implantação.');
@@ -33,12 +34,15 @@ async function migrate(){
  }
  await api('https://api.supabase.com',`/v1/projects/${ref}/config/auth`,token,{method:'PATCH',body:{disable_signup:true}});
  console.log('PASS Supabase: migrations aplicadas e cadastro público desativado.');
- if(projectId&&process.env.VERCEL_API_TOKEN){
+ if((projectId&&process.env.VERCEL_API_TOKEN)||(process.env.ADMIN_EMAIL&&process.env.ADMIN_PASSWORD)){
   const keys=await api('https://api.supabase.com',`/v1/projects/${ref}/api-keys`,token);
   const service=(Array.isArray(keys)?keys:keys?.keys||[]).find(k=>k.name==='service_role');
-  if(service?.api_key){await vercel(`/v10/projects/${encodeURIComponent(projectId)}/env?upsert=true`,{method:'POST',body:[{key:'SUPABASE_SERVICE_ROLE_KEY',value:service.api_key,type:'sensitive',target:['production','preview']}]});console.log('PASS credencial administrativa configurada somente no servidor Vercel.');}
-  else console.log('PENDENTE: configure a credencial administrativa de servidor na Vercel; o valor não foi retornado pelo provedor.');
+  if(service?.api_key&&projectId&&process.env.VERCEL_API_TOKEN){await vercel(`/v10/projects/${encodeURIComponent(projectId)}/env?upsert=true`,{method:'POST',body:[{key:'SUPABASE_SERVICE_ROLE_KEY',value:service.api_key,type:'sensitive',target:['production','preview']}]});console.log('PASS credencial administrativa configurada somente no servidor Vercel.');}
+  else if(projectId&&process.env.VERCEL_API_TOKEN)console.log('PENDENTE: configure a credencial administrativa de servidor na Vercel; o valor não foi retornado pelo provedor.');
+  if(process.env.ADMIN_EMAIL&&process.env.ADMIN_PASSWORD){if(!service?.api_key)throw new Error('A API não retornou a chave necessária ao provisionamento do proprietário.');const result=await bootstrapOwner({url:requireValue('NEXT_PUBLIC_SUPABASE_URL'),serviceKey:service.api_key,publicKey:requireValue('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'),email:process.env.ADMIN_EMAIL,password:process.env.ADMIN_PASSWORD});console.log(result.created?'PASS administrador criado e login verificado.':'PASS administrador já provisionado; nenhuma senha alterada.');}
+
  }
+ if(process.env.ADMIN_EMAIL&&!process.env.ADMIN_PASSWORD)console.log('PENDENTE ADMIN_PASSWORD: administrador ainda não foi criado.');
 }
 async function deploy(){
  requireValue('VERCEL_PROJECT_ID');const project=await vercel(`/v9/projects/${encodeURIComponent(projectId)}`);

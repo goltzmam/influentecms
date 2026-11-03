@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node --use-env-proxy node_modules/next/dist/bin/next dev --hostname 0.0.0.0",
+    "dev": "node scripts/next.mjs dev --hostname 0.0.0.0",
     "build": "next build",
-    "start": "node --use-env-proxy node_modules/next/dist/bin/next start --hostname 0.0.0.0",
+    "start": "node scripts/next.mjs start --hostname 0.0.0.0",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "admin:create": "node scripts/create-admin.mjs",
@@ -16,7 +16,8 @@
     "release:configure": "node --use-env-proxy scripts/release.mjs configure",
     "release:migrate": "node --use-env-proxy scripts/release.mjs migrate",
     "release:deploy": "node --use-env-proxy scripts/release.mjs deploy",
-    "release:status": "node --use-env-proxy scripts/release.mjs status"
+    "release:status": "node --use-env-proxy scripts/release.mjs status",
+    "build:vercel": "node scripts/vercel-build.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

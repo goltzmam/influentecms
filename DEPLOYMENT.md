@@ -35,3 +35,7 @@ O token GitHub desta sessão foi recusado (HTTP 403) ao gerenciar variáveis/seg
 ## Diagnóstico
 
 Use `npm run release:status` e as consultas somente leitura da API. Nunca exponha tokens, senhas ou valores de variáveis ao compartilhar erros. Respostas `PGRST205` em `portals`/`organizations` indicam ausência das tabelas na API/schema cache; aplicar migrations é necessário antes de considerar o CMS pronto. O teste `tests/release.test.mjs` executa o mecanismo transacional duas vezes e verifica preservação de conteúdo.
+
+## Bootstrap administrativo pelo build
+
+O projeto usa `npm run build:vercel`: em produção aplica migrations e faz bootstrap; previews apenas compilam e nunca alteram o banco ou proprietário de produção. Com `ADMIN_EMAIL` e `ADMIN_PASSWORD` configurados somente em Production, o script usa a chave administrativa retornada pela API Supabase em memória para criar o proprietário e verificar login/autorização. A senha nunca é gravada no código ou em logs. Use pelo menos 12 caracteres. Após confirmar o primeiro acesso, remova `ADMIN_PASSWORD` do projeto Vercel; o usuário permanece no Supabase Auth. Repetir o build não altera a senha de um proprietário existente. Falhas posteriores à concessão da autorização não removem uma conta válida.

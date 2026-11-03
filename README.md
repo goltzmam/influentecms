@@ -58,7 +58,7 @@ O bucket público `portal-media` é criado pela migration. Imagens públicas dev
 
 ## Administrador inicial
 
-O script recebe credenciais pelo ambiente; use um shell seguro ou arquivo local ignorado com permissão restrita. Não escreva valores no histórico de comandos. Defina `ADMIN_EMAIL` e uma senha única de pelo menos 16 caracteres em um arquivo local ignorado. Com URL e service role configurados:
+O script recebe credenciais pelo ambiente; use um shell seguro ou arquivo local ignorado com permissão restrita. Não escreva valores no histórico de comandos. Defina `ADMIN_EMAIL` e uma senha única de pelo menos 12 caracteres em um arquivo local ignorado. Com URL e service role configurados:
 
 ```sh
 node --env-file=.env.local scripts/create-admin.mjs
