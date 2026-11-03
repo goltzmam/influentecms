@@ -121,6 +121,10 @@ npm run test:e2e
 
 O Playwright usa Chromium em `/usr/bin/chromium` (ajuste `CHROMIUM_PATH` se necessário). Cria um usuário e organização exclusivos para o teste, executa CRUD pelo navegador, verifica templates, busca, SEO, uploads e agendamento, e remove usuário/organização/arquivos criados ao final. Recusa destinos Supabase fora de loopback. Nunca execute contra produção. O teste inicia um servidor temporário na porta 3100; screenshots e traces de falha ficam ignorados pelo Git.
 
+## Automação de implantação
+
+Consulte [DEPLOYMENT.md](DEPLOYMENT.md) para configuração Vercel por API, integração automática com GitHub e migrations Supabase transacionais.
+
 ## Produção, publicação e backups
 
 Vincule este repositório a um projeto Vercel, configure as variáveis e aplique as migrations no Supabase de produção. Defina `APP_URL` com HTTPS e o domínio principal do CMS. Configure wildcard se necessário, e não mantenha usuários ou portais de teste em produção. As verificações locais não comprovam DNS, HTTPS nem restauração em um ambiente publicado.

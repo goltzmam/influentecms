@@ -1,0 +1,27 @@
+name: Aplicar migrations Supabase
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - supabase/migrations/**
+permissions:
+  contents: read
+concurrency:
+  group: supabase-production
+  cancel-in-progress: false
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    if: ${{ vars.SUPABASE_MIGRATIONS_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Aplicar migrations e manter autenticação privada
+        run: node --use-env-proxy scripts/release.mjs migrate
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://ohtzqdbyneycvhoyvgbo.supabase.co' }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
