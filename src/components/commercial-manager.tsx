@@ -64,6 +64,14 @@ export function CommercialManager({
           </div>
         </div>
       </div>
+      <div className="commercial-report-link">
+        <a
+          className="button button-outline"
+          href={`/painel/${portalId}/metricas?kind=${kind === "campaign" ? "campaign" : "partner"}`}
+        >
+          Ver métricas e baixar PDF →
+        </a>
+      </div>
       <div className="commercial-toolbar">
         <input
           type="search"
@@ -256,6 +264,24 @@ function CreativeForm({
         </h2>
         <p>Veja sua peça ganhar forma enquanto você edita.</p>
       </div>
+      {item && (
+        <p>
+          <a
+            className="text-link"
+            href={`/painel/${portalId}/metricas?kind=${kind === "campaign" ? "campaign" : "partner"}&item=${item.id}`}
+          >
+            Métricas desta peça e relatório PDF →
+          </a>
+        </p>
+      )}
+      <label className="check-label">
+        <input
+          type="checkbox"
+          checked={creative.demo || false}
+          onChange={(e) => edit("demo", e.target.checked)}
+        />
+        Peça demonstrativa (não conta nas métricas)
+      </label>
       <label>
         Nome
         <input

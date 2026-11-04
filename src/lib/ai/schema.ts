@@ -151,6 +151,7 @@ export const blueprintShape = z.object({
   articles: z
     .array(
       z.object({
+        imagePrompt: text(800).optional(),
         title: text(200).min(1),
         slug,
         subtitle: text(400),
@@ -161,6 +162,7 @@ export const blueprintShape = z.object({
         seoDescription: text(180),
       }),
     )
+    .min(1)
     .max(6),
 });
 export const blueprintSchema = blueprintShape.superRefine((plan, ctx) => {

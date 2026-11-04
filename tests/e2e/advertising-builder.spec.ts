@@ -361,23 +361,21 @@ test("Editor visual: três papéis, drag and drop, prévia real, persistência e
   await expect(
     page.getByText("Campanha salva.", { exact: true }),
   ).toBeVisible();
-  const side = await admin
-    .from("campaigns")
-    .insert({
-      organization_id: org,
-      portal_id: portal,
-      name: "Google na editoria",
-      image_url: "",
-      link: "",
-      position: "sidebar",
-      active: true,
-      creative: {
-        mediaType: "google",
-        format: "rectangle",
-        googleSlot: "5555555555",
-        pageKinds: ["category", "search", "page"],
-      },
-    });
+  const side = await admin.from("campaigns").insert({
+    organization_id: org,
+    portal_id: portal,
+    name: "Google na editoria",
+    image_url: "",
+    link: "",
+    position: "sidebar",
+    active: true,
+    creative: {
+      mediaType: "google",
+      format: "rectangle",
+      googleSlot: "5555555555",
+      pageKinds: ["category", "search", "page"],
+    },
+  });
   if (side.error) throw side.error;
   await page.goto(`/p/${slug}/categoria/politica`);
   await expect(
@@ -391,4 +389,150 @@ test("Editor visual: três papéis, drag and drop, prévia real, persistência e
   await expect(
     page.locator('.article-body ins[data-ad-slot="9876543210"]'),
   ).toHaveCount(1);
+});
+
+test("Métricas reais de publicidade e parceiro, demonstrações excluídas e PDF individual", async ({
+  page,
+}) => {
+  const image = (
+    await admin
+      .from("campaigns")
+      .select("image_url")
+      .eq("id", campaign)
+      .single()
+  ).data!.image_url;
+  const newAd = await admin
+    .from("campaigns")
+    .insert({
+      organization_id: org,
+      portal_id: portal,
+      name: "Campanha mensurável",
+      image_url: image,
+      link: "https://example.com/metricas",
+      position: "header",
+      active: true,
+      creative: { format: "leaderboard" },
+    })
+    .select("id")
+    .single();
+  if (newAd.error) throw newAd.error;
+  const id = newAd.data.id;
+  const newPartner = await admin
+    .from("partners")
+    .insert({
+      organization_id: org,
+      portal_id: portal,
+      name: "Parceiro mensurável",
+      image_url: image,
+      link: "https://example.com/parceiro",
+      active: true,
+    })
+    .select("id")
+    .single();
+  if (newPartner.error) throw newPartner.error;
+  const demo = await admin
+    .from("campaigns")
+    .insert({
+      organization_id: org,
+      portal_id: portal,
+      name: "Demonstração",
+      image_url: image,
+      link: "https://example.com/demo",
+      position: "header",
+      active: true,
+      creative: { demo: true },
+    })
+    .select("id")
+    .single();
+  if (demo.error) throw demo.error;
+  await admin
+    .from("portals")
+    .update({
+      settings: {
+        color: "#6324dc",
+        contactEnabled: false,
+        newsletterEnabled: false,
+      },
+      home_published: [
+        { id: randomUUID(), type: "partners", title: "Parceiros" },
+      ],
+    })
+    .eq("id", portal);
+  await page.goto("/p/" + slug);
+  const ad = page.locator(`[data-campaign-id="${id}"]`);
+  await expect(ad).toBeVisible();
+  await ad.scrollIntoViewIfNeeded();
+  await expect
+    .poll(
+      async () =>
+        (
+          await admin
+            .from("ad_events")
+            .select("id", { count: "exact", head: true })
+            .eq("item_id", id)
+            .eq("event", "view")
+        ).count,
+    )
+    .toBeGreaterThan(0);
+  await page.route("https://example.com/**", (r) =>
+    r.fulfill({ body: "Anunciante" }),
+  );
+  const popup = page.waitForEvent("popup");
+  await ad.locator("a").first().click();
+  await (await popup).close();
+  const partner = page
+    .locator(".premium-partner-card")
+    .filter({ hasText: "Parceiro mensurável" });
+  await partner.scrollIntoViewIfNeeded();
+  await expect
+    .poll(
+      async () =>
+        (
+          await admin
+            .from("ad_events")
+            .select("id", { count: "exact", head: true })
+            .eq("item_id", newPartner.data.id)
+            .eq("event", "view")
+        ).count,
+    )
+    .toBeGreaterThan(0);
+  await expect
+    .poll(
+      async () =>
+        (
+          await admin
+            .from("ad_events")
+            .select("id", { count: "exact", head: true })
+            .eq("item_id", id)
+            .eq("event", "click")
+        ).count,
+    )
+    .toBe(1);
+  expect(
+    (
+      await admin
+        .from("ad_events")
+        .select("id", { count: "exact", head: true })
+        .eq("item_id", demo.data.id)
+    ).count,
+  ).toBe(0);
+  await page.goto("/login");
+  await page.getByLabel("E-mail", { exact: true }).fill(email);
+  await page.getByLabel("Senha", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Entrar no painel" }).click();
+  await expect(page).toHaveURL(/\/painel$/);
+  await page.goto(`/painel/${portal}/metricas?kind=campaign&item=${id}`);
+  await expect(
+    page.getByRole("heading", { name: "Campanha mensurável" }),
+  ).toBeVisible();
+  const pdf = await page.request.get(
+    `/painel/${portal}/metricas/pdf?kind=campaign&item=${id}`,
+  );
+  expect(pdf.status()).toBe(200);
+  expect(pdf.headers()["content-type"]).toContain("application/pdf");
+  expect((await pdf.body()).subarray(0, 4).toString()).toBe("%PDF");
+  const bad = await page.request.get(
+    `/painel/${portal}/metricas/pdf?from=invalid`,
+  );
+  expect(bad.status()).toBe(400);
 });

@@ -125,7 +125,7 @@ try {
     headers,
     body: JSON.stringify({
       jobId: project.jobId,
-      publishArticles: false,
+      publishArticles: true,
       edits: {
         name: plan.name,
         slug: `flue-check-${suffix}`,
@@ -137,7 +137,7 @@ try {
         tagline: i.tagline,
       },
     }),
-    signal: AbortSignal.timeout(60000),
+    signal: AbortSignal.timeout(240000),
   });
   const result = await created.json();
   check(created.ok && result.portalId, `Creation HTTP ${created.status}`);
@@ -149,11 +149,137 @@ try {
   check(portal.data?.settings?.logo, "Brand asset missing");
   const articles = await admin
     .from("articles")
-    .select("status")
+    .select("status,cover_url")
     .eq("portal_id", result.portalId);
   check(
-    !articles.error && articles.data.every((a) => a.status === "draft"),
-    "Draft status mismatch",
+    !articles.error &&
+      articles.data.every((a) => a.status === "published" && !!a.cover_url),
+    "Visible editorial images missing",
+  );
+  const demos = await admin
+    .from("campaigns")
+    .select("id,image_url,creative")
+    .eq("portal_id", result.portalId);
+  check(
+    !demos.error &&
+      demos.data.length === 4 &&
+      demos.data.every((c) => c.image_url && c.creative.demo),
+    "Editable demo campaigns missing",
+  );
+  const partner = await admin
+    .from("partners")
+    .select("id,image_url,creative")
+    .eq("portal_id", result.portalId);
+  check(
+    !partner.error &&
+      partner.data.length === 1 &&
+      partner.data[0].image_url &&
+      partner.data[0].creative.demo,
+    "Demo partner missing",
+  );
+  stage = "metrics and PDF";
+  const campaign = await admin
+    .from("campaigns")
+    .insert({
+      organization_id: organizationId,
+      portal_id: result.portalId,
+      name: "Temporary release measurement",
+      image_url: articles.data[0].cover_url,
+      link: "https://example.com/advertiser",
+      position: "header",
+      active: true,
+    })
+    .select("id")
+    .single();
+  check(!campaign.error, "Temporary campaign failed");
+  const visitor = randomUUID(),
+    session = randomUUID(),
+    pageView = randomUUID();
+  const batch = ["served", "view", "click"].map((event) => ({
+    id: randomUUID(),
+    item: campaign.data.id,
+    kind: "campaign",
+    event,
+    visitor,
+    session,
+    pageView,
+    placement: "header",
+    path: `/p/flue-check-${suffix}`,
+    source: "direto",
+    device: "desktop",
+    value: 0,
+  }));
+  const endpoint = origin + `/p/flue-check-${suffix}/events`;
+  const metricHeaders = {
+    Origin: origin,
+    "Content-Type": "application/json",
+    "User-Agent": "InfluenteReleaseVerification/1.0",
+  };
+  const counted = await fetch(endpoint, {
+    method: "POST",
+    headers: metricHeaders,
+    body: JSON.stringify({ events: batch }),
+  });
+  check(counted.status === 204, `Metric endpoint HTTP ${counted.status}`);
+  const duplicate = await fetch(endpoint, {
+    method: "POST",
+    headers: metricHeaders,
+    body: JSON.stringify({
+      events: batch.map((e) => ({ ...e, id: randomUUID() })),
+    }),
+  });
+  check(duplicate.status === 204, "Metric deduplication request failed");
+  const excluded = await fetch(endpoint, {
+    method: "POST",
+    headers: metricHeaders,
+    body: JSON.stringify({
+      events: [{ ...batch[0], id: randomUUID(), item: demos.data[0].id }],
+    }),
+  });
+  check(excluded.status === 204, "Demo exclusion request failed");
+  const measured = await owner.rpc("ad_metrics_report", {
+    p_portal: result.portalId,
+    p_from: new Date(Date.now() - 86400000).toISOString(),
+    p_until: new Date(Date.now() + 86400000).toISOString(),
+  });
+  check(
+    !measured.error &&
+      measured.data.totals.served === 1 &&
+      measured.data.totals.views === 1 &&
+      measured.data.totals.clicks === 1,
+    "Measured counts mismatch",
+  );
+  const reportUi = await fetch(
+    origin +
+      `/painel/${result.portalId}/metricas?item=${campaign.data.id}&kind=campaign`,
+    { headers },
+  );
+  check(
+    reportUi.ok &&
+      (await reportUi.text()).includes("Temporary release measurement"),
+    "Authenticated metrics unavailable",
+  );
+  const pdf = await fetch(
+    origin +
+      `/painel/${result.portalId}/metricas/pdf?item=${campaign.data.id}&kind=campaign`,
+    { headers },
+  );
+  check(
+    pdf.ok &&
+      pdf.headers.get("content-type").includes("application/pdf") &&
+      Buffer.from(await pdf.arrayBuffer())
+        .subarray(0, 4)
+        .toString() === "%PDF",
+    "PDF download failed",
+  );
+  console.log(
+    JSON.stringify({
+      check: "Commercial metrics live flow",
+      status: "PASS",
+      deduplicated: true,
+      demonstrationsExcluded: true,
+      authenticatedPdf: true,
+    }),
   );
   stage = "public portal";
   const published = await fetch(origin + `/p/flue-check-${suffix}`);
@@ -170,6 +296,9 @@ try {
       pages: plan.pages.length,
       articles: plan.articles.length,
       editablePortal: true,
+      images: articles.data.length,
+      demoCampaigns: demos.data.length,
+      demoPartners: partner.data.length,
     }),
   );
 } catch (error) {

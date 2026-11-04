@@ -7,7 +7,7 @@ import {
   editsSchema,
   personalize,
 } from "@/lib/ai/schema";
-import { createBrandAssets } from "@/lib/ai/assets";
+import { completeAiPresentation } from "@/lib/ai/presentation";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 export async function POST(request: Request) {
@@ -17,36 +17,41 @@ export async function POST(request: Request) {
       .object({
         jobId: z.uuid(),
         edits: editsSchema,
-        publishArticles: z.boolean().default(false),
+        publishArticles: z.boolean().default(true),
       })
       .safeParse(await jsonBody(request));
     if (!input.success)
       throw new ApiFailure(400, "Revise nome, endereço e cores do projeto.");
     const { data: job, error } = await auth.client
       .from("portal_ai_jobs")
-      .select("id,status,plan,generated_portal_id,warnings")
+      .select("id,status,plan,generated_portal_id,warnings,visual_status")
       .eq("id", input.data.jobId)
       .eq("organization_id", auth.organizationId)
       .eq("user_id", auth.user.id)
       .single();
     if (error || !job) throw new ApiFailure(404, "Projeto não encontrado.");
-    if (job.status === "created") {
-      if (!job.generated_portal_id)
-        throw new ApiFailure(
-          409,
-          "O portal deste projeto foi removido. Gere um novo projeto.",
-        );
-      return Response.json({ portalId: job.generated_portal_id, warnings: [] });
-    }
-    if (job.status !== "ready")
+    if (job.status === "created" && !job.generated_portal_id)
+      throw new ApiFailure(
+        409,
+        "O portal deste projeto foi removido. Gere um novo projeto.",
+      );
+    if (job.status === "created" && job.visual_status === "ready")
+      return Response.json({
+        portalId: job.generated_portal_id,
+        warnings: job.warnings || [],
+      });
+    if (!["ready", "created"].includes(job.status))
       throw new ApiFailure(409, "Aguarde a geração do projeto antes de criar.");
     const plan = personalize(blueprintSchema.parse(job.plan), input.data.edits);
     const payload = creationPayload(plan);
-    const created = await auth.client.rpc("create_portal_from_ai", {
-      p_job: job.id,
-      p_plan: payload,
-      p_publish_articles: input.data.publishArticles,
-    });
+    const created =
+      job.status === "created"
+        ? { data: job.generated_portal_id, error: null }
+        : await auth.client.rpc("create_portal_from_ai", {
+            p_job: job.id,
+            p_plan: payload,
+            p_publish_articles: input.data.publishArticles,
+          });
     if (created.error) {
       if (created.error.code === "23505")
         throw new ApiFailure(
@@ -59,39 +64,50 @@ export async function POST(request: Request) {
       );
     }
     const portalId = created.data as string;
-    const assets = await createBrandAssets(
-      auth.client,
-      auth.organizationId,
-      portalId,
-      plan,
-    );
-    const warnings = [...(job.warnings || []), ...assets.warnings];
-    if (assets.logo || assets.favicon) {
-      const result = await auth.client
-        .from("portals")
-        .update({
-          settings: {
-            ...payload.settings,
-            logo: assets.logo,
-            favicon: assets.favicon,
-            ogImage: assets.logo,
-          },
-        })
-        .eq("id", portalId)
-        .eq("organization_id", auth.organizationId);
-      if (result.error)
-        warnings.push(
-          "A identidade visual está na biblioteca, mas deve ser selecionada em Personalização.",
-        );
-    }
-    for (const [slug, cover_url] of Object.entries(assets.covers)) {
-      const result = await auth.client
-        .from("articles")
-        .update({ cover_url })
-        .eq("portal_id", portalId)
-        .eq("slug", slug);
-      if (result.error)
-        warnings.push("Selecione a capa pela biblioteca ao editar o texto.");
+    const claim = await auth.client.rpc("claim_ai_visuals", { p_job: job.id });
+    if (claim.error)
+      throw new ApiFailure(
+        503,
+        "Não foi possível iniciar as imagens. Tente novamente.",
+      );
+    if (!claim.data)
+      return Response.json(
+        {
+          portalId,
+          pending: true,
+          warnings: [
+            "A composição visual ainda está sendo preparada. Aguarde e tente abrir novamente.",
+          ],
+        },
+        { status: 202 },
+      );
+    let warnings = [...(job.warnings || [])];
+    let visual;
+    try {
+      visual = await completeAiPresentation(
+        auth.client,
+        auth.organizationId,
+        portalId,
+        plan,
+      );
+      warnings = [...warnings, ...visual.warnings];
+      const finished = await auth.client.rpc("finish_ai_visuals", {
+        p_job: job.id,
+        p_ready: visual.ready,
+        p_warnings: warnings,
+      });
+      if (finished.error || !visual.ready)
+        throw new Error("Visual setup incomplete");
+    } catch {
+      await auth.client.rpc("finish_ai_visuals", {
+        p_job: job.id,
+        p_ready: false,
+        p_warnings: [...warnings, "A composição visual precisa ser retomada."],
+      });
+      throw new ApiFailure(
+        503,
+        "O portal foi criado. Tente concluir novamente para preparar as imagens; o portal não será duplicado.",
+      );
     }
     revalidatePath("/", "layout");
     return Response.json(

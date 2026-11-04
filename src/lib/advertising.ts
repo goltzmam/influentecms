@@ -55,6 +55,7 @@ export const adSlotSchema = z.object({
     .regex(/^#[0-9a-f]{6}$/i)
     .optional(),
   showEmpty: z.boolean().optional(),
+  demo: z.boolean().optional(),
   enabled: z.boolean().optional(),
 });
 export type AdSlot = z.infer<typeof adSlotSchema>;

@@ -1,3 +1,4 @@
+import { AdMetrics } from "./ad-metrics";
 import { GoogleAd } from "./google-ad";
 import { ArrowUpRight } from "lucide-react";
 import type { Campaign, Partner } from "@/lib/types";
@@ -54,78 +55,89 @@ export function AdCreative({
   campaign,
   preview = false,
   disclosure = true,
+  metricPlacement,
 }: {
   campaign: Campaign;
   preview?: boolean;
   disclosure?: boolean;
+  metricPlacement?: string;
 }) {
   const c = campaign.creative || {},
     size = formats[c.format || ""] || [c.width || 970, c.height || 250];
   const custom = c.format && c.format !== "auto";
   return (
-    <aside
-      className={`public-ad ad-${campaign.position} premium-ad creative-${c.mediaType || "image"} ad-device-${c.device || "all"} format-${c.format || "auto"}`}
-      data-campaign-id={campaign.id}
-      style={{
-        width: custom ? size[0] : undefined,
-        maxWidth: "100%",
-        marginLeft: c.align === "left" ? 0 : "auto",
-        marginRight: c.align === "right" ? 0 : "auto",
-        background: c.background,
-        color: c.color,
-        borderRadius: c.radius ?? 12,
-      }}
+    <AdMetrics
+      id={campaign.id}
+      kind="campaign"
+      placement={metricPlacement || campaign.position}
+      mediaType={c.mediaType}
+      demo={c.demo || preview}
     >
-      {disclosure && <span className="advert-disclosure">Publicidade</span>}
-      <div
-        className="ad-creative-media"
+      <aside
+        className={`public-ad ad-${campaign.position} premium-ad creative-${c.mediaType || "image"} ad-device-${c.device || "all"} format-${c.format || "auto"}`}
+        data-campaign-id={campaign.id}
         style={{
-          aspectRatio: custom ? `${size[0]}/${size[1]}` : undefined,
+          width: custom ? size[0] : undefined,
+          maxWidth: "100%",
+          marginLeft: c.align === "left" ? 0 : "auto",
+          marginRight: c.align === "right" ? 0 : "auto",
+          background: c.background,
+          color: c.color,
+          borderRadius: c.radius ?? 12,
         }}
       >
-        {c.mediaType === "google" ? (
-          preview ? (
-            <div className="ad-slot-placeholder google-campaign-placeholder">
-              Google Ads · prévia
+        {c.demo && <span className="demo-badge">Demonstração · editável</span>}
+        {disclosure && <span className="advert-disclosure">Publicidade</span>}
+        <div
+          className="ad-creative-media"
+          style={{
+            aspectRatio: custom ? `${size[0]}/${size[1]}` : undefined,
+          }}
+        >
+          {c.mediaType === "google" ? (
+            preview ? (
+              <div className="ad-slot-placeholder google-campaign-placeholder">
+                Google Ads · prévia
+              </div>
+            ) : (
+              <GoogleAd
+                publisherId={c.googlePublisherId || ""}
+                slot={c.googleSlot}
+              />
+            )
+          ) : c.mediaType === "text" ? (
+            <div className="ad-native-content">
+              <strong>{campaign.name}</strong>
+              <p>{c.description}</p>
             </div>
-          ) : (
-            <GoogleAd
-              publisherId={c.googlePublisherId || ""}
-              slot={c.googleSlot}
-            />
-          )
-        ) : c.mediaType === "text" ? (
-          <div className="ad-native-content">
-            <strong>{campaign.name}</strong>
-            <p>{c.description}</p>
-          </div>
-        ) : c.mediaType === "video" ? (
-          <CreativeMedia item={campaign} />
-        ) : (
-          <a
-            href={safeLink(campaign.link)}
-            target="_blank"
-            rel="sponsored noopener noreferrer"
-          >
+          ) : c.mediaType === "video" ? (
             <CreativeMedia item={campaign} />
-          </a>
-        )}
-      </div>
-      {(c.cta || c.mediaType === "video" || c.mediaType === "text") &&
-        campaign.link && (
-          <a
-            className="creative-cta"
-            href={safeLink(campaign.link)}
-            target="_blank"
-            rel="sponsored noopener noreferrer"
-          >
-            {c.cta || "Saiba mais"}{" "}
-            <span aria-hidden="true">
-              <ArrowUpRight size={15} />
-            </span>
-          </a>
-        )}
-    </aside>
+          ) : (
+            <a
+              href={safeLink(campaign.link)}
+              target="_blank"
+              rel="sponsored noopener noreferrer"
+            >
+              <CreativeMedia item={campaign} />
+            </a>
+          )}
+        </div>
+        {(c.cta || c.mediaType === "video" || c.mediaType === "text") &&
+          campaign.link && (
+            <a
+              className="creative-cta"
+              href={safeLink(campaign.link)}
+              target="_blank"
+              rel="sponsored noopener noreferrer"
+            >
+              {c.cta || "Saiba mais"}{" "}
+              <span aria-hidden="true">
+                <ArrowUpRight size={15} />
+              </span>
+            </a>
+          )}
+      </aside>
+    </AdMetrics>
   );
 }
 export function PartnerCard({
@@ -139,39 +151,48 @@ export function PartnerCard({
 }) {
   const c = partner.creative || {};
   return (
-    <article className="premium-partner-card">
-      <div className="partner-visual">
-        {c.mediaType === "video" ? (
-          <CreativeMedia item={partner} fit={fit} />
-        ) : (
-          <a
-            href={safeLink(partner.link)}
-            target="_blank"
-            rel="sponsored noopener noreferrer"
-            aria-label={partner.name}
-          >
+    <AdMetrics
+      id={partner.id}
+      kind="partner"
+      placement="partners"
+      mediaType={c.mediaType}
+      demo={c.demo}
+    >
+      <article className="premium-partner-card">
+        {c.demo && <span className="demo-badge">Parceria demonstrativa</span>}
+        <div className="partner-visual">
+          {c.mediaType === "video" ? (
             <CreativeMedia item={partner} fit={fit} />
-          </a>
-        )}
-      </div>
-      {(showName || c.description || c.cta) && (
-        <div className="partner-card-copy">
-          {showName && <h3>{partner.name}</h3>}
-          {c.description && <p>{c.description}</p>}
-          {partner.link && (
+          ) : (
             <a
               href={safeLink(partner.link)}
               target="_blank"
               rel="sponsored noopener noreferrer"
+              aria-label={partner.name}
             >
-              {c.cta || "Conheça a marca"}{" "}
-              <span aria-hidden="true">
-                <ArrowUpRight size={15} />
-              </span>
+              <CreativeMedia item={partner} fit={fit} />
             </a>
           )}
         </div>
-      )}
-    </article>
+        {(showName || c.description || c.cta) && (
+          <div className="partner-card-copy">
+            {showName && <h3>{partner.name}</h3>}
+            {c.description && <p>{c.description}</p>}
+            {partner.link && (
+              <a
+                href={safeLink(partner.link)}
+                target="_blank"
+                rel="sponsored noopener noreferrer"
+              >
+                {c.cta || "Conheça a marca"}{" "}
+                <span aria-hidden="true">
+                  <ArrowUpRight size={15} />
+                </span>
+              </a>
+            )}
+          </div>
+        )}
+      </article>
+    </AdMetrics>
   );
 }

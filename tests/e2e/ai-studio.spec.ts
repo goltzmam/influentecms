@@ -148,8 +148,26 @@ test("Estúdio IA recupera plano, pré-visualiza e cria portal editável real", 
     .from("articles")
     .select("status,cover_url")
     .eq("portal_id", portal.data.id);
-  expect(articles.data?.[0].status).toBe("draft");
+  expect(articles.data?.[0].status).toBe("published");
   expect(articles.data?.[0].cover_url).toContain("/storage/v1/object/public/");
+  const demos = await client
+    .from("campaigns")
+    .select("id,creative,image_url")
+    .eq("portal_id", portal.data.id);
+  expect(demos.data).toHaveLength(4);
+  expect(demos.data?.every((c) => c.creative.demo && c.image_url)).toBe(true);
+  const partners = await client
+    .from("partners")
+    .select("id,creative,image_url")
+    .eq("portal_id", portal.data.id);
+  expect(partners.data).toHaveLength(1);
+  expect(partners.data?.[0].creative.demo).toBe(true);
+  const visuals = await client
+    .from("portal_ai_jobs")
+    .select("visual_status")
+    .eq("id", started.data)
+    .single();
+  expect(visuals.data?.visual_status).toBe("ready");
   await page.goto(`/painel/${portal.data.id}/midia`);
   await page.getByRole("button", { name: "Atualizar artes de marca" }).click();
   await expect(page.getByText(/artes de marca atualizadas/)).toBeVisible();

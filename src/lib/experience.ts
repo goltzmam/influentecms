@@ -142,6 +142,9 @@ export type PageContext = {
 };
 export const creativeSchema = z
   .object({
+    demo: z.boolean().optional(),
+    source: z.enum(["flue", "slot"]).optional(),
+    investment: z.number().min(0).max(100000000).optional(),
     mediaType: z.enum(["image", "video", "text", "google"]).default("image"),
     googlePublisherId: z
       .string()

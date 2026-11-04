@@ -1,4 +1,5 @@
 "use client";
+import { AdMetrics } from "./ad-metrics";
 import type { AdSlot, Advertising } from "@/lib/advertising";
 import { adFormats } from "@/lib/advertising";
 import type { Campaign } from "@/lib/types";
@@ -79,19 +80,30 @@ export function AdSlotView({
             }}
             preview={preview}
             disclosure={false}
+            metricPlacement={`${slot.zone}:${sectionId}:${slot.id}`}
           />
         ) : google && !preview ? (
-          <GoogleAd
-            publisherId={advertising!.publisherId!}
-            slot={slot.googleSlot}
-            responsive={slot.responsive !== false}
-          />
+          <AdMetrics
+            id={slot.id}
+            kind="campaign"
+            placement={`${slot.zone}:${sectionId}:${slot.id}`}
+            mediaType="google"
+          >
+            <GoogleAd
+              publisherId={advertising!.publisherId!}
+              slot={slot.googleSlot}
+              responsive={slot.responsive !== false}
+            />
+          </AdMetrics>
         ) : (
           <div
             className="ad-slot-placeholder"
             style={{ background: slot.background }}
           >
-            <strong>{label}</strong>
+            <strong>
+              {label}
+              {slot.demo ? " · demonstração" : ""}
+            </strong>
             {preview && (
               <small>
                 {size[0]} × {size[1]} ·{" "}

@@ -135,7 +135,7 @@ export function AiPortalStudio({
     [error, setError] = useState(""),
     [result, setResult] = useState<Result | null>(null),
     [preview, setPreview] = useState(false),
-    [publishArticles, setPublishArticles] = useState(false);
+    [publishArticles, setPublishArticles] = useState(true);
   const [edits, setEdits] = useState({
     name: "",
     slug: "",
@@ -158,7 +158,7 @@ export function AiPortalStudio({
       textColor: next.plan.identity.textColor,
       tagline: next.plan.identity.tagline,
     });
-    setPublishArticles(false);
+    setPublishArticles(true);
     setError("");
   }
   async function generate(event: React.FormEvent) {
@@ -263,6 +263,10 @@ export function AiPortalStudio({
       });
       if (!response.ok)
         throw new Error(data.error || "Não foi possível criar.");
+      if (data.pending)
+        throw new Error(
+          "A composição visual ainda está sendo preparada. Aguarde e clique em concluir novamente; o portal não será duplicado.",
+        );
       const notice = data.warnings?.length
         ? `Portal criado. ${data.warnings.join(" ")}`
         : "Portal criado com IA. Todos os elementos podem ser editados no painel.";
@@ -725,8 +729,8 @@ export function AiPortalStudio({
                 <h2>Seu portal, de verdade</h2>
                 <p>
                   A estrutura será salva no CMS com categorias, páginas,
-                  identidade e ilustrações de marca. Você poderá alterar tudo
-                  depois.
+                  identidade, imagens editoriais e espaços demonstrativos de
+                  publicidade e parceiros. Você poderá alterar tudo depois.
                 </p>
                 <label className="check-label">
                   <input

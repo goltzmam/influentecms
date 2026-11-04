@@ -1,3 +1,4 @@
+import { AdMetricsProvider } from "./ad-metrics";
 import { AdSlotView } from "./ad-slot";
 import { GoogleAd, GoogleAdsPreview } from "./google-ad";
 import { referenceAdSlots } from "@/lib/advertising";
@@ -237,391 +238,414 @@ export function NewsShell({
           ...(s.menus || []),
         ];
   return (
-    <GoogleAdsPreview preview={preview} enabled={!!s.advertising?.enabled}>
-      <div
-        className={`news-site reference-site ${portal.template}`}
-        style={
-          {
-            "--portal-color": palette(s.color, "#6324dc"),
-            "--portal-accent": palette(s.accentColor, "#d5ff00"),
-            "--portal-surface": palette(s.surfaceColor, "#ffffff"),
-            "--portal-ink": palette(s.textColor, "#21152e"),
-            "--portal-font":
-              s.font === "serif" ? "Georgia, serif" : "Arial, sans-serif",
-          } as CSSProperties
-        }
-      >
-        {!preview &&
-          s.advertising?.enabled &&
-          s.advertising.autoAds &&
-          s.advertising.publisherId && (
-            <GoogleAd publisherId={s.advertising.publisherId} auto />
-          )}
-        {preview && (
-          <div className="preview-ribbon">
-            PRÉ-VISUALIZAÇÃO PRIVADA · Conteúdo não publicado
-          </div>
-        )}
-        {portal.template === "classic" ? (
-          <header
-            data-edit-region="navigation"
-            className={`reference-header nav-logo-${s.experience?.navigation?.logoAlign || "left"} ${s.experience?.navigation?.sticky ? "header-sticky" : ""}`}
-            style={{
-              backgroundColor: s.experience?.navigation?.customColors
-                ? s.experience.navigation.background
-                : undefined,
-              color: s.experience?.navigation?.customColors
-                ? s.experience.navigation.color
-                : undefined,
-            }}
-          >
-            <div className={`news-masthead masthead-${portal.template}`}>
-              <div className="brand-column">
-                <Link className="news-logo" href={basePath || "/"}>
-                  {s.logo ? (
-                    <img src={safeLink(s.logo)} alt={portal.name} />
-                  ) : (
-                    <span>{portal.name}</span>
-                  )}
-                </Link>
-                {s.tagline && <p className="brand-tagline">{s.tagline}</p>}
-              </div>
-              <PortalNavigation
-                items={links}
-                basePath={basePath}
-                name={portal.name}
-                logo={s.logo}
-                config={s.experience?.navigation}
-              />
-              <div className="header-tools">
-                {preview ? (
-                  <div className="public-search">
-                    <input
-                      aria-label="Buscar notícias"
-                      placeholder={`Encontre no ${portal.name}`}
-                      disabled
-                    />
-                    <button type="button" disabled>
-                      Buscar
-                    </button>
-                  </div>
-                ) : (
-                  <form className="public-search" action={`${basePath}/busca`}>
-                    <input
-                      aria-label="Buscar notícias"
-                      type="search"
-                      name="q"
-                      placeholder={`Encontre no ${portal.name}`}
-                      required
-                    />
-                    <button>Buscar</button>
-                  </form>
-                )}
-                {s.whatsappUrl && (
-                  <a
-                    className="header-whatsapp"
-                    href={safeLink(s.whatsappUrl)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <MessageCircle size={17} />
-                    <span>{s.whatsappText}</span>
-                  </a>
-                )}
-              </div>
-            </div>
-            {s.header && <p className="header-editorial-note">{s.header}</p>}
-          </header>
-        ) : (
-          <EditorialHeader
-            portal={portal}
-            settings={s}
-            links={links}
-            basePath={basePath}
-            preview={preview}
-          />
-        )}
-        <main className="news-container">
-          <Campaigns campaigns={automaticCampaigns} position="header" />
-          <Campaigns campaigns={automaticCampaigns} position="before-content" />
-          {children}
-          <Campaigns campaigns={automaticCampaigns} position="after-content" />
-          <Campaigns campaigns={automaticCampaigns} position="footer" />
-          {partners.length > 0 && (
-            <section
-              data-edit-region="partners"
-              className={`public-partners premium-partners partners-${s.experience?.partners?.layout || "cards"}`}
-              style={
-                {
-                  background: s.experience?.partners?.background,
-                  color: s.experience?.partners?.color,
-                  "--partner-columns": s.experience?.partners?.columns || 4,
-                  "--partner-card-bg": s.experience?.partners?.cardBackground,
-                  "--partner-radius": `${s.experience?.partners?.radius ?? 16}px`,
-                } as CSSProperties
-              }
-            >
-              <div className="partner-section-heading">
-                <div>
-                  <span className="section-overline">
-                    CONEXÕES QUE IMPORTAM
-                  </span>
-                  <h2>
-                    {s.experience?.partners?.title ||
-                      "Quem caminha com a gente"}
-                  </h2>
-                  {s.experience?.partners?.subtitle && (
-                    <p>{s.experience.partners.subtitle}</p>
-                  )}
-                </div>
-                <span className="partner-count">
-                  {partners.length}{" "}
-                  {partners.length === 1 ? "parceiro" : "parceiros"}
-                </span>
-              </div>
-              <div className="premium-partner-grid">
-                {partners.map((p) => (
-                  <PartnerCard
-                    key={p.id}
-                    partner={p}
-                    showName={s.experience?.partners?.showNames !== false}
-                    fit={s.experience?.partners?.imageFit}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-          {(s.socialCards?.some((c) => c.image) ||
-            (s.contactEnabled && s.experience?.contact?.mode !== "hidden")) && (
-            <section className="community-section">
-              <div className="community-cards">
-                {s.socialCards
-                  ?.filter((c) => c.image)
-                  .map((c, i) => (
-                    <a
-                      key={i}
-                      href={safeLink(c.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <h2>
-                        <SocialIcon label={c.label} />
-                        {c.label}
-                      </h2>
-                      <img src={safeLink(c.image)} alt={c.label} />
-                    </a>
-                  ))}
-              </div>
-              {s.contactEnabled && (
-                <ContactForm
-                  config={s.experience?.contact}
-                  portalId={portal.id}
-                  title={s.contactTitle || "Fale com a redação"}
-                  privacyUrl={
-                    s.privacyUrl ? siteLink(s.privacyUrl, basePath) : undefined
-                  }
-                  preview={preview}
-                />
-              )}
-            </section>
-          )}
-        </main>
-        {(s.newsletterEnabled || s.whatsappUrl) && (
-          <section className="news-newsletter">
-            <div>
-              {s.newsletterEnabled && (
-                <NewsletterForm
-                  portalId={portal.id}
-                  title={s.newsletterTitle || "Receba novidades por e-mail"}
-                  preview={preview}
-                />
-              )}
-              {s.whatsappUrl && (
-                <div className="newsletter-whatsapp">
-                  <h2>{s.newsletterText}</h2>
-                  <a
-                    href={safeLink(s.whatsappUrl)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <MessageCircle size={19} />
-                    {s.whatsappText}
-                  </a>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-        <footer
-          data-edit-region="footer"
-          className={`news-footer footer-layout-${s.experience?.footer?.layout || "columns"}`}
+    <AdMetricsProvider
+      endpoint={`${basePath}/events`}
+      preview={preview || process.env.VERCEL_ENV === "preview"}
+    >
+      <GoogleAdsPreview preview={preview} enabled={!!s.advertising?.enabled}>
+        <div
+          className={`news-site reference-site ${portal.template}`}
           style={
             {
-              background: s.experience?.footer?.background,
-              color: s.experience?.footer?.color,
-              "--footer-columns": Math.min(
-                s.experience?.footer?.columns || 4,
-                1 +
-                  (s.experience?.footer?.showMenu !== false ? 1 : 0) +
-                  (s.experience?.footer?.showCommercial !== false ? 1 : 0) +
-                  (s.experience?.footer?.showSocials !== false &&
-                  s.socials?.length
-                    ? 1
-                    : 0),
-              ),
+              "--portal-color": palette(s.color, "#6324dc"),
+              "--portal-accent": palette(s.accentColor, "#d5ff00"),
+              "--portal-surface": palette(s.surfaceColor, "#ffffff"),
+              "--portal-ink": palette(s.textColor, "#21152e"),
+              "--portal-font":
+                s.font === "serif" ? "Georgia, serif" : "Arial, sans-serif",
             } as CSSProperties
           }
         >
-          <div className="footer-columns">
-            <section>
-              {s.experience?.footer?.showLogo !== false && (
-                <Link className="news-logo" href={basePath || "/"}>
-                  {s.experience?.footer?.logo || s.logo ? (
-                    <img
-                      src={safeLink(s.experience?.footer?.logo || s.logo || "")}
-                      alt={portal.name}
-                    />
-                  ) : (
-                    <span>{portal.name}</span>
-                  )}
-                </Link>
-              )}
-              <p>{s.tagline}</p>
-              {s.contactPhone && (
-                <a href={`tel:${s.contactPhone.replace(/[^+0-9]/g, "")}`}>
-                  {s.contactPhone}
-                </a>
-              )}
-              {s.contactEmail && (
-                <a href={`mailto:${s.contactEmail}`}>{s.contactEmail}</a>
-              )}
-            </section>
-            {s.experience?.footer?.showMenu !== false && (
-              <nav aria-label="Navegação do rodapé">
-                <FooterLinks
-                  items={
-                    s.experience?.footer?.menus?.length
-                      ? s.experience.footer.menus
-                      : links
-                  }
-                  basePath={basePath}
-                />
-                {s.experience?.footer?.showRss !== false && (
-                  <Link href={`${basePath}/rss.xml`}>RSS</Link>
-                )}
-              </nav>
+          {!preview &&
+            s.advertising?.enabled &&
+            s.advertising.autoAds &&
+            s.advertising.publisherId && (
+              <GoogleAd publisherId={s.advertising.publisherId} auto />
             )}
-            {s.experience?.footer?.showCommercial !== false && (
-              <section
-                className="footer-commercial"
-                style={{
-                  background: s.experience?.footer?.advertBackground,
-                  color: s.experience?.footer?.advertColor,
-                }}
-              >
-                {s.experience?.footer?.advertImage && (
-                  <a
-                    className="footer-advert-image"
-                    href={siteLink(
-                      s.experience.footer.advertLink || "",
-                      basePath,
-                    )}
-                    target="_blank"
-                    rel="sponsored noopener noreferrer"
-                  >
-                    <img
-                      src={safeLink(s.experience.footer.advertImage)}
-                      alt={
-                        s.experience.footer.advertTitle || "Anuncie com a gente"
-                      }
-                    />
-                  </a>
-                )}
-                {s.experience?.footer?.advertVideo && (
-                  <div className="footer-advert-video">
-                    {youtubeEmbed(s.experience.footer.advertVideo) ? (
-                      <iframe
-                        title="Conheça nossas oportunidades"
-                        src={youtubeEmbed(s.experience.footer.advertVideo)}
-                        allowFullScreen
-                        loading="lazy"
-                      />
+          {preview && (
+            <div className="preview-ribbon">
+              PRÉ-VISUALIZAÇÃO PRIVADA · Conteúdo não publicado
+            </div>
+          )}
+          {portal.template === "classic" ? (
+            <header
+              data-edit-region="navigation"
+              className={`reference-header nav-logo-${s.experience?.navigation?.logoAlign || "left"} ${s.experience?.navigation?.sticky ? "header-sticky" : ""}`}
+              style={{
+                backgroundColor: s.experience?.navigation?.customColors
+                  ? s.experience.navigation.background
+                  : undefined,
+                color: s.experience?.navigation?.customColors
+                  ? s.experience.navigation.color
+                  : undefined,
+              }}
+            >
+              <div className={`news-masthead masthead-${portal.template}`}>
+                <div className="brand-column">
+                  <Link className="news-logo" href={basePath || "/"}>
+                    {s.logo ? (
+                      <img src={safeLink(s.logo)} alt={portal.name} />
                     ) : (
-                      <video
-                        controls
-                        src={safeLink(s.experience.footer.advertVideo)}
+                      <span>{portal.name}</span>
+                    )}
+                  </Link>
+                  {s.tagline && <p className="brand-tagline">{s.tagline}</p>}
+                </div>
+                <PortalNavigation
+                  items={links}
+                  basePath={basePath}
+                  name={portal.name}
+                  logo={s.logo}
+                  config={s.experience?.navigation}
+                />
+                <div className="header-tools">
+                  {preview ? (
+                    <div className="public-search">
+                      <input
+                        aria-label="Buscar notícias"
+                        placeholder={`Encontre no ${portal.name}`}
+                        disabled
                       />
+                      <button type="button" disabled>
+                        Buscar
+                      </button>
+                    </div>
+                  ) : (
+                    <form
+                      className="public-search"
+                      action={`${basePath}/busca`}
+                    >
+                      <input
+                        aria-label="Buscar notícias"
+                        type="search"
+                        name="q"
+                        placeholder={`Encontre no ${portal.name}`}
+                        required
+                      />
+                      <button>Buscar</button>
+                    </form>
+                  )}
+                  {s.whatsappUrl && (
+                    <a
+                      className="header-whatsapp"
+                      href={safeLink(s.whatsappUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle size={17} />
+                      <span>{s.whatsappText}</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+              {s.header && <p className="header-editorial-note">{s.header}</p>}
+            </header>
+          ) : (
+            <EditorialHeader
+              portal={portal}
+              settings={s}
+              links={links}
+              basePath={basePath}
+              preview={preview}
+            />
+          )}
+          <main className="news-container">
+            <Campaigns campaigns={automaticCampaigns} position="header" />
+            <Campaigns
+              campaigns={automaticCampaigns}
+              position="before-content"
+            />
+            {children}
+            <Campaigns
+              campaigns={automaticCampaigns}
+              position="after-content"
+            />
+            <Campaigns campaigns={automaticCampaigns} position="footer" />
+            {partners.length > 0 && (
+              <section
+                data-edit-region="partners"
+                className={`public-partners premium-partners partners-${s.experience?.partners?.layout || "cards"}`}
+                style={
+                  {
+                    background: s.experience?.partners?.background,
+                    color: s.experience?.partners?.color,
+                    "--partner-columns": s.experience?.partners?.columns || 4,
+                    "--partner-card-bg": s.experience?.partners?.cardBackground,
+                    "--partner-radius": `${s.experience?.partners?.radius ?? 16}px`,
+                  } as CSSProperties
+                }
+              >
+                <div className="partner-section-heading">
+                  <div>
+                    <span className="section-overline">
+                      CONEXÕES QUE IMPORTAM
+                    </span>
+                    <h2>
+                      {s.experience?.partners?.title ||
+                        "Quem caminha com a gente"}
+                    </h2>
+                    {s.experience?.partners?.subtitle && (
+                      <p>{s.experience.partners.subtitle}</p>
                     )}
                   </div>
-                )}
-                {s.experience?.footer?.advertLink ? (
-                  <a
-                    className="footer-advert-cta"
-                    href={siteLink(s.experience.footer.advertLink, basePath)}
-                  >
-                    <strong>
-                      {s.experience.footer.advertTitle || "Anuncie com a gente"}
-                    </strong>
-                    <p>{s.commercialText}</p>
-                    <span>
-                      Conheça as oportunidades{" "}
-                      <ArrowUpRight size={14} aria-hidden="true" />
-                    </span>
-                  </a>
-                ) : (
-                  <p>{s.commercialText}</p>
-                )}
-                {s.commercialPhone && (
-                  <a href={`tel:${s.commercialPhone.replace(/[^+0-9]/g, "")}`}>
-                    {s.commercialPhone}
-                  </a>
-                )}
-                {s.commercialEmail && (
-                  <a href={`mailto:${s.commercialEmail}`}>
-                    {s.commercialEmail}
-                  </a>
-                )}
+                  <span className="partner-count">
+                    {partners.length}{" "}
+                    {partners.length === 1 ? "parceiro" : "parceiros"}
+                  </span>
+                </div>
+                <div className="premium-partner-grid">
+                  {partners.map((p) => (
+                    <PartnerCard
+                      key={p.id}
+                      partner={p}
+                      showName={s.experience?.partners?.showNames !== false}
+                      fit={s.experience?.partners?.imageFit}
+                    />
+                  ))}
+                </div>
               </section>
             )}
-            {s.experience?.footer?.showSocials !== false &&
-              !!s.socials?.length && (
-                <section className="footer-social">
-                  <p>Acompanhe o {portal.name} nas redes</p>
-                  <div>
-                    {s.socials?.map((l, i) => (
+            {(s.socialCards?.some((c) => c.image) ||
+              (s.contactEnabled &&
+                s.experience?.contact?.mode !== "hidden")) && (
+              <section className="community-section">
+                <div className="community-cards">
+                  {s.socialCards
+                    ?.filter((c) => c.image)
+                    .map((c, i) => (
                       <a
                         key={i}
-                        href={safeLink(l.url)}
-                        aria-label={l.label}
+                        href={safeLink(c.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <SocialIcon label={l.label} />
+                        <h2>
+                          <SocialIcon label={c.label} />
+                          {c.label}
+                        </h2>
+                        <img src={safeLink(c.image)} alt={c.label} />
                       </a>
                     ))}
+                </div>
+                {s.contactEnabled && (
+                  <ContactForm
+                    config={s.experience?.contact}
+                    portalId={portal.id}
+                    title={s.contactTitle || "Fale com a redação"}
+                    privacyUrl={
+                      s.privacyUrl
+                        ? siteLink(s.privacyUrl, basePath)
+                        : undefined
+                    }
+                    preview={preview}
+                  />
+                )}
+              </section>
+            )}
+          </main>
+          {(s.newsletterEnabled || s.whatsappUrl) && (
+            <section className="news-newsletter">
+              <div>
+                {s.newsletterEnabled && (
+                  <NewsletterForm
+                    portalId={portal.id}
+                    title={s.newsletterTitle || "Receba novidades por e-mail"}
+                    preview={preview}
+                  />
+                )}
+                {s.whatsappUrl && (
+                  <div className="newsletter-whatsapp">
+                    <h2>{s.newsletterText}</h2>
+                    <a
+                      href={safeLink(s.whatsappUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle size={19} />
+                      {s.whatsappText}
+                    </a>
                   </div>
+                )}
+              </div>
+            </section>
+          )}
+          <footer
+            data-edit-region="footer"
+            className={`news-footer footer-layout-${s.experience?.footer?.layout || "columns"}`}
+            style={
+              {
+                background: s.experience?.footer?.background,
+                color: s.experience?.footer?.color,
+                "--footer-columns": Math.min(
+                  s.experience?.footer?.columns || 4,
+                  1 +
+                    (s.experience?.footer?.showMenu !== false ? 1 : 0) +
+                    (s.experience?.footer?.showCommercial !== false ? 1 : 0) +
+                    (s.experience?.footer?.showSocials !== false &&
+                    s.socials?.length
+                      ? 1
+                      : 0),
+                ),
+              } as CSSProperties
+            }
+          >
+            <div className="footer-columns">
+              <section>
+                {s.experience?.footer?.showLogo !== false && (
+                  <Link className="news-logo" href={basePath || "/"}>
+                    {s.experience?.footer?.logo || s.logo ? (
+                      <img
+                        src={safeLink(
+                          s.experience?.footer?.logo || s.logo || "",
+                        )}
+                        alt={portal.name}
+                      />
+                    ) : (
+                      <span>{portal.name}</span>
+                    )}
+                  </Link>
+                )}
+                <p>{s.tagline}</p>
+                {s.contactPhone && (
+                  <a href={`tel:${s.contactPhone.replace(/[^+0-9]/g, "")}`}>
+                    {s.contactPhone}
+                  </a>
+                )}
+                {s.contactEmail && (
+                  <a href={`mailto:${s.contactEmail}`}>{s.contactEmail}</a>
+                )}
+              </section>
+              {s.experience?.footer?.showMenu !== false && (
+                <nav aria-label="Navegação do rodapé">
+                  <FooterLinks
+                    items={
+                      s.experience?.footer?.menus?.length
+                        ? s.experience.footer.menus
+                        : links
+                    }
+                    basePath={basePath}
+                  />
+                  {s.experience?.footer?.showRss !== false && (
+                    <Link href={`${basePath}/rss.xml`}>RSS</Link>
+                  )}
+                </nav>
+              )}
+              {s.experience?.footer?.showCommercial !== false && (
+                <section
+                  className="footer-commercial"
+                  style={{
+                    background: s.experience?.footer?.advertBackground,
+                    color: s.experience?.footer?.advertColor,
+                  }}
+                >
+                  {s.experience?.footer?.advertImage && (
+                    <a
+                      className="footer-advert-image"
+                      href={siteLink(
+                        s.experience.footer.advertLink || "",
+                        basePath,
+                      )}
+                      target="_blank"
+                      rel="sponsored noopener noreferrer"
+                    >
+                      <img
+                        src={safeLink(s.experience.footer.advertImage)}
+                        alt={
+                          s.experience.footer.advertTitle ||
+                          "Anuncie com a gente"
+                        }
+                      />
+                    </a>
+                  )}
+                  {s.experience?.footer?.advertVideo && (
+                    <div className="footer-advert-video">
+                      {youtubeEmbed(s.experience.footer.advertVideo) ? (
+                        <iframe
+                          title="Conheça nossas oportunidades"
+                          src={youtubeEmbed(s.experience.footer.advertVideo)}
+                          allowFullScreen
+                          loading="lazy"
+                        />
+                      ) : (
+                        <video
+                          controls
+                          src={safeLink(s.experience.footer.advertVideo)}
+                        />
+                      )}
+                    </div>
+                  )}
+                  {s.experience?.footer?.advertLink ? (
+                    <a
+                      className="footer-advert-cta"
+                      href={siteLink(s.experience.footer.advertLink, basePath)}
+                    >
+                      <strong>
+                        {s.experience.footer.advertTitle ||
+                          "Anuncie com a gente"}
+                      </strong>
+                      <p>{s.commercialText}</p>
+                      <span>
+                        Conheça as oportunidades{" "}
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </span>
+                    </a>
+                  ) : (
+                    <p>{s.commercialText}</p>
+                  )}
+                  {s.commercialPhone && (
+                    <a
+                      href={`tel:${s.commercialPhone.replace(/[^+0-9]/g, "")}`}
+                    >
+                      {s.commercialPhone}
+                    </a>
+                  )}
+                  {s.commercialEmail && (
+                    <a href={`mailto:${s.commercialEmail}`}>
+                      {s.commercialEmail}
+                    </a>
+                  )}
                 </section>
               )}
-          </div>
-          {s.experience?.footer?.showSearch && (
-            <form className="footer-search" action={`${basePath}/busca`}>
-              <input
-                name="q"
-                placeholder="O que você procura?"
-                aria-label="Buscar no rodapé"
-                disabled={preview}
-              />
-              <button disabled={preview}>Buscar</button>
-            </form>
-          )}
-          {s.footer && <p className="footer-note">{s.footer}</p>}
-          <small>
-            {s.experience?.footer?.copyright ||
-              `© ${new Date().getFullYear()} ${portal.name} · Todos os direitos reservados.`}
-          </small>
-        </footer>
-      </div>
-    </GoogleAdsPreview>
+              {s.experience?.footer?.showSocials !== false &&
+                !!s.socials?.length && (
+                  <section className="footer-social">
+                    <p>Acompanhe o {portal.name} nas redes</p>
+                    <div>
+                      {s.socials?.map((l, i) => (
+                        <a
+                          key={i}
+                          href={safeLink(l.url)}
+                          aria-label={l.label}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <SocialIcon label={l.label} />
+                        </a>
+                      ))}
+                    </div>
+                  </section>
+                )}
+            </div>
+            {s.experience?.footer?.showSearch && (
+              <form className="footer-search" action={`${basePath}/busca`}>
+                <input
+                  name="q"
+                  placeholder="O que você procura?"
+                  aria-label="Buscar no rodapé"
+                  disabled={preview}
+                />
+                <button disabled={preview}>Buscar</button>
+              </form>
+            )}
+            {s.footer && <p className="footer-note">{s.footer}</p>}
+            <small>
+              {s.experience?.footer?.copyright ||
+                `© ${new Date().getFullYear()} ${portal.name} · Todos os direitos reservados.`}
+            </small>
+          </footer>
+        </div>
+      </GoogleAdsPreview>
+    </AdMetricsProvider>
   );
 }
 export function Campaigns({

@@ -15,6 +15,7 @@ import {
   FileText,
   ExternalLink,
   Sparkles,
+  ChartNoAxesCombined,
 } from "lucide-react";
 export function AdminNav({
   portals,
@@ -36,6 +37,7 @@ export function AdminNav({
     ["midia", "Biblioteca de mídia", ImageIcon],
     ["publicidade", "Publicidade", Megaphone],
     ["parceiros", "Parceiros", Handshake],
+    ["metricas", "Métricas comerciais", ChartNoAxesCombined],
     ["paginas", "Páginas", FileText],
     ["dominios", "Domínios", Globe2],
     ...(isOwner ? [["equipe", "Equipe", Handshake] as const] : []),

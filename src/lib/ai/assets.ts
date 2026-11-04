@@ -1,4 +1,9 @@
 import "server-only";
+import {
+  editorialIllustration,
+  demonstrationArt,
+  generatedVisual,
+} from "./visuals";
 import { brandImage } from "./brand-renderer";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AiBlueprint } from "./schema";
@@ -9,8 +14,17 @@ export async function createBrandAssets(
   plan: AiBlueprint,
 ) {
   const warnings: string[] = [];
+  const existing = await client
+    .from("media")
+    .select("name,url")
+    .eq("portal_id", portalId);
+  const known = new Map((existing.data || []).map((m) => [m.name, m.url]));
+  let generatedCount = 0,
+    illustratedCount = 0;
+  const imageBudget = AbortSignal.timeout(85000);
   const { color, accentColor, surfaceColor } = plan.identity;
   async function upload(name: string, render: () => Promise<Buffer>) {
+    if (known.has(name)) return known.get(name)!;
     let path = "";
     try {
       const bytes = await render();
@@ -51,17 +65,90 @@ export async function createBrandAssets(
     }),
   );
   const covers: Record<string, string> = {};
-  for (const article of plan.articles) {
-    const cover = await upload(`Ilustração de marca: ${article.title}`, () =>
-      brandImage({
+  const coverAlts: Record<string, string> = {};
+  const pending = [...plan.articles];
+  await Promise.all(
+    Array.from({ length: 2 }, async () => {
+      for (let article = pending.shift(); article; article = pending.shift()) {
+        const current = article;
+        const cover = await upload(
+          `Ilustração editorial FLUE: ${current.title}`,
+          async () => {
+            const generated = await generatedVisual(
+              `${plan.name}. ${current.title}. ${current.imagePrompt || current.subtitle}`,
+              imageBudget,
+            );
+            if (generated) {
+              generatedCount++;
+              return generated;
+            }
+            illustratedCount++;
+            return editorialIllustration({
+              name: plan.name,
+              title: current.title,
+              color,
+              accent: accentColor,
+            });
+          },
+        );
+        if (cover) {
+          covers[current.slug] = cover;
+          coverAlts[current.slug] =
+            `Ilustração editorial gerada para ${current.title}; imagem ilustrativa.`;
+        }
+      }
+    }),
+  );
+  const demonstration = {
+    vertical: await upload("Publicidade vertical demonstrativa FLUE", () =>
+      demonstrationArt({
         name: plan.name,
-        title: article.title,
         color,
         accent: accentColor,
-        kind: "cover",
+        kind: "vertical",
       }),
-    );
-    if (cover) covers[article.slug] = cover;
-  }
-  return { logo, favicon, covers, warnings };
+    ),
+    rectangle: await upload("Publicidade retangular demonstrativa FLUE", () =>
+      demonstrationArt({
+        name: plan.name,
+        color,
+        accent: accentColor,
+        kind: "rectangle",
+      }),
+    ),
+    banner: await upload("Publicidade demonstrativa FLUE", () =>
+      demonstrationArt({
+        name: plan.name,
+        color,
+        accent: accentColor,
+        kind: "banner",
+      }),
+    ),
+    sponsor: await upload("Patrocínio demonstrativo FLUE", () =>
+      demonstrationArt({
+        name: plan.name,
+        color,
+        accent: accentColor,
+        kind: "sponsor",
+      }),
+    ),
+    partner: await upload("Parceria demonstrativa FLUE", () =>
+      demonstrationArt({
+        name: plan.name,
+        color,
+        accent: accentColor,
+        kind: "partner",
+      }),
+    ),
+  };
+  return {
+    logo,
+    favicon,
+    covers,
+    coverAlts,
+    demonstration,
+    warnings,
+    generatedCount,
+    illustratedCount,
+  };
 }
