@@ -1,3 +1,4 @@
+import { DomainConnection } from "@/components/domain-connection";
 import { refreshBrandArtwork } from "../../artwork-actions";
 import { CommercialManager } from "@/components/commercial-manager";
 import { ExperienceEditor } from "@/components/experience-editor";
@@ -33,7 +34,6 @@ import {
   savePage,
   removeRecord,
   addDomain,
-  verifyDomain,
   deleteDomain,
 } from "../../actions";
 const titles: Record<string, [string, string]> = {
@@ -912,45 +912,12 @@ export default async function PortalAdmin({
           {domains.map((d) => (
             <section className="panel" key={d.id}>
               <h2>{d.hostname}</h2>
-              <span className={`badge ${d.verified ? "published" : "draft"}`}>
-                {d.verified ? "Verificado" : "Aguardando DNS"}
-              </span>
-              <p>
-                No site onde você comprou o domínio, abra as configurações de
-                endereço e adicione os registros abaixo. Depois clique em
-                Verificar conexão.
-              </p>
-              {d.provider_status?.verification?.map(
-                (
-                  v: { type: string; domain: string; value: string },
-                  i: number,
-                ) => (
-                  <pre key={i}>
-                    {v.type} · {v.domain}\n{v.value}
-                  </pre>
-                ),
-              )}
-              {(d.provider_status?.recommendedCNAME || []).map(
-                (v: { value: string }, i: number) => (
-                  <pre key={`cname-${i}`}>CNAME · {v.value}</pre>
-                ),
-              )}
-              {(d.provider_status?.recommendedIPv4 || []).map(
-                (v: { value: string }, i: number) => (
-                  <pre key={`ipv4-${i}`}>A · {v.value}</pre>
-                ),
-              )}
-              {d.provider_status?.checked_at && (
-                <p className="field-hint">
-                  Última consulta: {d.provider_status.checked_at}
-                </p>
-              )}
+              <DomainConnection
+                portalId={portalId}
+                initial={d}
+                enabled={Boolean(process.env.VERCEL_API_TOKEN)}
+              />
               <div className="row-actions">
-                <form action={verifyDomain}>
-                  <PortalId id={portalId} />
-                  <input type="hidden" name="id" value={d.id} />
-                  <SubmitButton>Verificar DNS e HTTPS</SubmitButton>
-                </form>
                 <form action={deleteDomain}>
                   <PortalId id={portalId} />
                   <input type="hidden" name="id" value={d.id} />

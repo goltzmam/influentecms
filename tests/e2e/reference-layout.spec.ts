@@ -40,8 +40,10 @@ test.beforeAll(async () => {
       .from("organization_members")
       .insert({ organization_id: org, user_id: userId }),
   );
-  for (const [index, template] of ["classic", "modern"].entries()) {
-    const name = index ? "Revista Influente" : "Influente News",
+  for (const [index, template] of ["classic", "modern", "daily"].entries()) {
+    const name = ["Influente News", "Revista Influente", "Jornal Diário"][
+        index
+      ],
       slug = `referencia-${index}-${suffix}`;
     const portal = await checked(
       admin
@@ -107,16 +109,14 @@ test.beforeAll(async () => {
     const imageUrl = admin.storage.from("portal-media").getPublicUrl(path)
       .data.publicUrl;
     await checked(
-      admin
-        .from("media")
-        .insert({
-          organization_id: org,
-          portal_id: id,
-          name: "Fixture de teste",
-          path,
-          url: imageUrl,
-          size: image.length,
-        }),
+      admin.from("media").insert({
+        organization_id: org,
+        portal_id: id,
+        name: "Fixture de teste",
+        path,
+        url: imageUrl,
+        size: image.length,
+      }),
     );
     const articles = await checked(
       admin
@@ -157,29 +157,19 @@ test.beforeAll(async () => {
     const adUrl = admin.storage.from("portal-media").getPublicUrl(adPath)
       .data.publicUrl;
     await checked(
-      admin
-        .from("media")
-        .insert({
-          organization_id: org,
-          portal_id: id,
-          name: "Banner exclusivo de teste",
-          path: adPath,
-          url: adUrl,
-          size: ad.length,
-        }),
+      admin.from("media").insert({
+        organization_id: org,
+        portal_id: id,
+        name: "Banner exclusivo de teste",
+        path: adPath,
+        url: adUrl,
+        size: ad.length,
+      }),
     );
     await checked(
-      admin
-        .from("campaigns")
-        .insert(
-          [
-            "header",
-            "sidebar",
-            "between",
-            "category",
-            "sponsored",
-            "footer",
-          ].map((position) => ({
+      admin.from("campaigns").insert(
+        ["header", "sidebar", "between", "category", "sponsored", "footer"].map(
+          (position) => ({
             organization_id: org,
             portal_id: id,
             name: `Campanha de teste ${position}`,
@@ -187,8 +177,9 @@ test.beforeAll(async () => {
             link: "https://example.com",
             position,
             active: true,
-          })),
+          }),
         ),
+      ),
     );
     const sections = [
       { id: randomUUID(), type: "lead", title: "" },
@@ -209,6 +200,11 @@ test.beforeAll(async () => {
         position: "category",
       })),
     ];
+    sections.push({
+      id: randomUUID(),
+      type: "latest",
+      title: "Últimas histórias",
+    } as (typeof sections)[number]);
     sections.splice(3, 0, {
       id: randomUUID(),
       type: "banner",
@@ -270,7 +266,7 @@ test.afterAll(async () => {
   }
   if (userId) await checked(admin.auth.admin.deleteUser(userId));
 });
-test("PDF: mesma composição nos dois templates, carrossel, paleta, contato e inscrição reais", async ({
+test("Três composições independentes com mesma paleta e conteúdo; contato e inscrição reais", async ({
   page,
 }, testInfo) => {
   await page.route("https://www.youtube-nocookie.com/**", (route) =>
@@ -282,27 +278,58 @@ test("PDF: mesma composição nos dois templates, carrossel, paleta, contato e i
   for (const portal of created) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`/p/${portal.slug}`);
-    await expect(page.locator(".reference-header")).toHaveCSS(
-      "background-color",
-      "rgb(99, 36, 220)",
-    );
-    await expect(page.locator(".reference-carousel")).toBeVisible();
-    await expect(page.locator(".reference-video iframe")).toHaveAttribute(
-      "src",
-      /youtube-nocookie/,
-    );
+    if (portal === created[0]) {
+      await expect(page.locator(".reference-carousel")).toBeVisible();
+      await expect(page.locator(".reference-video iframe")).toHaveAttribute(
+        "src",
+        /youtube-nocookie/,
+      );
+      await expect(
+        page.locator('[data-theme-composition="classic-cover"]'),
+      ).toBeVisible();
+    } else if (portal === created[1]) {
+      await expect(
+        page.locator('[data-theme-composition="magazine-cover"]'),
+      ).toBeVisible();
+      await expect(page.locator(".reference-carousel")).toHaveCount(0);
+      const copy = await page.locator(".magazine-cover-copy").boundingBox();
+      const image = await page.locator(".magazine-cover-image").boundingBox();
+      expect(image!.x).toBeGreaterThan(copy!.x + copy!.width - 1);
+      await expect(page.locator(".magazine-department-grid")).toHaveCount(2);
+    } else {
+      await expect(
+        page.locator('[data-theme-composition="daily-cover"]'),
+      ).toBeVisible();
+      await expect(page.locator(".reference-carousel")).toHaveCount(0);
+      await expect(page.locator(".daily-feed-sidebar")).toBeVisible();
+      const cards = page.locator(".daily-feed > .news-grid > .news-card");
+      const first = await cards.nth(0).boundingBox(),
+        second = await cards.nth(1).boundingBox();
+      expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height - 1);
+      await expect(
+        cards
+          .locator("h2")
+          .filter({ hasText: "As decisões que movimentam a semana" }),
+      ).toHaveCount(0);
+    }
     await expect(page.locator(".reference-category")).toHaveCount(2);
     await expect(page.locator(".section-sponsor")).toHaveCount(2);
     await expect(page.locator(".sponsored-strip")).toBeVisible();
     await expect(page.locator(".community-cards>a")).toHaveCount(2);
-    await page.getByRole("button", { name: /^Manchete 2:/ }).click();
-    await expect(
-      page.getByRole("button", { name: /^Manchete 2:/ }),
-    ).toHaveAttribute("aria-pressed", "true");
+    if (portal === created[0]) {
+      await page.getByRole("button", { name: /^Manchete 2:/ }).click();
+      await expect(
+        page.getByRole("button", { name: /^Manchete 2:/ }),
+      ).toHaveAttribute("aria-pressed", "true");
+    }
     await page.screenshot({
       path: testInfo.outputPath(
         `${portal.name.replaceAll(" ", "-")}-desktop.png`,
       ),
+      fullPage: true,
+    });
+    await page.screenshot({
+      path: `/tmp/template-${created.indexOf(portal)}-desktop.png`,
       fullPage: true,
     });
     await page.setViewportSize({ width: 390, height: 844 });
@@ -312,16 +339,33 @@ test("PDF: mesma composição nos dois templates, carrossel, paleta, contato e i
       ),
     ).toBe(true);
     await page.screenshot({
-      path: testInfo.outputPath(
-        `${portal.name.replaceAll(" ", "-")}-mobile.png`,
-      ),
+      path: `/tmp/template-${created.indexOf(portal)}-mobile.png`,
       fullPage: true,
     });
+    await page.setViewportSize({ width: 768, height: 1024 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.goto(`/p/${portal.slug}/noticia/noticia-0`);
+    await expect(page.locator(".public-article h1")).toHaveText(
+      "As decisões que movimentam a semana",
+    );
+    await page.goto(`/p/${portal.slug}/categoria/politica`);
+    await expect(page.locator(".public-section-heading h1")).toHaveText(
+      "Política",
+    );
+    await page.goto(`/p/${portal.slug}/busca?q=editorial`);
+    await expect(page.locator(".public-section-heading h1")).toHaveText(
+      "Busca: editorial",
+    );
   }
   const first = created[0];
   await page.goto(`/p/${first.slug}`);
   const contact = page.locator(".reader-contact");
-  if(await contact.locator("summary").count())await contact.locator("summary").click();
+  if (await contact.locator("summary").count())
+    await contact.locator("summary").click();
   await contact.getByLabel("Nome *", { exact: true }).fill("Leitora de teste");
   await contact
     .getByLabel("E-mail *", { exact: true })
@@ -362,7 +406,12 @@ test("PDF: mesma composição nos dois templates, carrossel, paleta, contato e i
   await expect(
     page.getByText(`reader-${suffix}@example.test`, { exact: true }),
   ).toBeVisible();
-  const exported=await page.request.get(`/painel/${first.id}/leitores/exportar?tipo=mensagens`);expect(exported.status()).toBe(200);expect(exported.headers()['content-type']).toContain('text/csv');expect(await exported.text()).toContain(`reader-${suffix}@example.test`);
+  const exported = await page.request.get(
+    `/painel/${first.id}/leitores/exportar?tipo=mensagens`,
+  );
+  expect(exported.status()).toBe(200);
+  expect(exported.headers()["content-type"]).toContain("text/csv");
+  expect(await exported.text()).toContain(`reader-${suffix}@example.test`);
   await page.goto(`/painel/${created[1].id}/leitores`);
   await expect(page.getByText("Nenhuma mensagem recebida.")).toBeVisible();
   await expect(page.getByText("Nenhuma inscrição recebida.")).toBeVisible();
@@ -383,14 +432,47 @@ test("PDF: mesma composição nos dois templates, carrossel, paleta, contato e i
     "rgb(255, 222, 115)",
   );
   await page.goto(`/painel/${first.id}/aparencia`);
-  await page.getByLabel('Organização do menu',{exact:true}).selectOption('custom');
-  const navigation=page.locator('section.panel').filter({has:page.getByRole('heading',{name:'Menu de navegação',exact:true})});
-  await navigation.getByRole('button',{name:'+ Adicionar item ao menu',exact:true}).click();
-  await navigation.getByRole('button',{name:'+ Adicionar item ao menu',exact:true}).click();
-  await navigation.getByLabel('Nome do item',{exact:true}).nth(0).fill('Sobre a publicação');await navigation.getByLabel('Destino do item',{exact:true}).nth(0).fill('/pagina/sobre');
-  await navigation.getByLabel('Nome do item',{exact:true}).nth(1).fill('Notícias');await navigation.getByLabel('Destino do item',{exact:true}).nth(1).fill('/busca?q=noticia');
-  await navigation.getByRole('button',{name:'Subir item 2',exact:true}).click();
-  await page.getByRole('button',{name:'Salvar personalização'}).click();await expect(page.getByText('Personalização salva.',{exact:true})).toBeVisible();
-  await page.goto(`/p/${first.slug}`);await expect(page.locator('.news-nav a').first()).toHaveText('Notícias');await expect(page.locator('.news-nav a')).toHaveCount(2);
-
+  await page
+    .getByLabel("Organização do menu", { exact: true })
+    .selectOption("custom");
+  const navigation = page
+    .locator("section.panel")
+    .filter({
+      has: page.getByRole("heading", {
+        name: "Menu de navegação",
+        exact: true,
+      }),
+    });
+  await navigation
+    .getByRole("button", { name: "+ Adicionar item ao menu", exact: true })
+    .click();
+  await navigation
+    .getByRole("button", { name: "+ Adicionar item ao menu", exact: true })
+    .click();
+  await navigation
+    .getByLabel("Nome do item", { exact: true })
+    .nth(0)
+    .fill("Sobre a publicação");
+  await navigation
+    .getByLabel("Destino do item", { exact: true })
+    .nth(0)
+    .fill("/pagina/sobre");
+  await navigation
+    .getByLabel("Nome do item", { exact: true })
+    .nth(1)
+    .fill("Notícias");
+  await navigation
+    .getByLabel("Destino do item", { exact: true })
+    .nth(1)
+    .fill("/busca?q=noticia");
+  await navigation
+    .getByRole("button", { name: "Subir item 2", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Salvar personalização" }).click();
+  await expect(
+    page.getByText("Personalização salva.", { exact: true }),
+  ).toBeVisible();
+  await page.goto(`/p/${first.slug}`);
+  await expect(page.locator(".news-nav a").first()).toHaveText("Notícias");
+  await expect(page.locator(".news-nav a")).toHaveCount(2);
 });

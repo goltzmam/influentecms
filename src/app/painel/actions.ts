@@ -16,6 +16,7 @@ import {
   slugSchema,
 } from "@/lib/validation";
 import { cleanHtml } from "@/lib/content";
+import { resolveDomain } from "@/lib/domain-state";
 import { vercel } from "@/lib/vercel";
 import { serviceClient } from "@/lib/supabase/service";
 const str = (f: FormData, k: string) => String(f.get(k) || "");
@@ -612,6 +613,52 @@ export async function removeRecord(form: FormData) {
   }
   finish(`/painel/${portal.id}/${paths[table]}`, message);
 }
+function formWithDomain(portalId: string, hostname: string) {
+  const f = new FormData();
+  f.set("portal_id", portalId);
+  f.set("hostname", hostname);
+  return f;
+}
+export async function checkDomainConnection(form: FormData) {
+  const { client, portal } = await requirePortal(str(form, "portal_id"));
+  const hostname = domainSchema.parse(str(form, "hostname"));
+  const { data, error } = await client
+    .from("domains")
+    .select("id,hostname,verified,provider_status")
+    .eq("portal_id", portal.id)
+    .eq("hostname", hostname)
+    .single();
+  if (error || !data) return { error: "Domínio não encontrado neste portal." };
+  if (!process.env.VERCEL_API_TOKEN)
+    return {
+      domain: data,
+      error:
+        "Domínio salvo. A conexão automática precisa ser ativada pelo responsável pela plataforma.",
+      automatic: false,
+    };
+  if (
+    data.provider_status?.checked_at &&
+    Date.now() - new Date(data.provider_status.checked_at).getTime() < 20000
+  )
+    return { domain: data, automatic: true };
+  try {
+    const state = await resolveDomain(
+      hostname,
+      process.env.VERCEL_PROJECT_ID || "",
+      vercel,
+    );
+    const service = await serviceClient();
+    const update = await service
+      .from("domains")
+      .update(state)
+      .eq("id", data.id)
+      .eq("portal_id", portal.id);
+    if (update.error) throw update.error;
+    return { domain: { ...data, ...state }, automatic: true };
+  } catch (e) {
+    return { domain: data, error: issue(e), automatic: false };
+  }
+}
 export async function addDomain(form: FormData) {
   const { client, portal } = await requirePortal(str(form, "portal_id"));
   let message = "Domínio cadastrado. Configure o DNS e verifique.";
@@ -636,29 +683,13 @@ export async function addDomain(form: FormData) {
       organization_id: portal.organization_id,
     });
     if (error) throw error;
-    const projectDomain = await vercel(
-      `/v10/projects/${encodeURIComponent(process.env.VERCEL_PROJECT_ID!)}/domains`,
-      { method: "POST", body: JSON.stringify({ name: hostname }) },
+    const result = await checkDomainConnection(
+      formWithDomain(portal.id, hostname),
     );
-    const config = await vercel(
-      `/v6/domains/${encodeURIComponent(hostname)}/config`,
-    );
-    const result = await (
-      await serviceClient()
-    )
-      .from("domains")
-      .update({
-        provider_status: {
-          verification: projectDomain.verification || [],
-          misconfigured: config.misconfigured,
-          recommendedCNAME: config.recommendedCNAME || [],
-          recommendedIPv4: config.recommendedIPv4 || [],
-          checked_at: new Date().toISOString(),
-        },
-      })
-      .eq("hostname", hostname)
-      .eq("portal_id", portal.id);
-    if (result.error) throw result.error;
+    if (result.error) throw new Error(`CMS:${result.error}`);
+    message = result.domain?.verified
+      ? "Domínio conectado ao portal."
+      : "Domínio salvo. Copie os registros abaixo; a conexão será verificada automaticamente nesta página.";
   } catch (e) {
     message = issue(e);
   }
@@ -676,44 +707,13 @@ export async function verifyDomain(form: FormData) {
       .eq("portal_id", portal.id)
       .single();
     if (error) throw error;
-    const service = await serviceClient();
-    const host = encodeURIComponent(data.hostname),
-      project = encodeURIComponent(process.env.VERCEL_PROJECT_ID || "");
-    // GET ownership first; a hostname on another project must never be accepted.
-    let projectDomain = await vercel(
-      `/v9/projects/${project}/domains/${host}`,
-      { allow404: true },
+    const result = await checkDomainConnection(
+      formWithDomain(portal.id, data.hostname),
     );
-    if (!projectDomain)
-      projectDomain = await vercel(`/v10/projects/${project}/domains`, {
-        method: "POST",
-        body: JSON.stringify({ name: data.hostname }),
-      });
-    if (!projectDomain.verified)
-      projectDomain = await vercel(
-        `/v9/projects/${project}/domains/${host}/verify`,
-        { method: "POST" },
-      );
-    const config = await vercel(`/v6/domains/${host}/config`);
-    const verified =
-      projectDomain.verified === true && config.misconfigured === false;
-    const { error: updateError } = await service
-      .from("domains")
-      .update({
-        verified,
-        provider_status: {
-          verification: projectDomain.verification || [],
-          misconfigured: config.misconfigured,
-          recommendedCNAME: config.recommendedCNAME || [],
-          recommendedIPv4: config.recommendedIPv4 || [],
-          checked_at: new Date().toISOString(),
-        },
-      })
-      .eq("id", id);
-    if (updateError) throw updateError;
-    message = verified
-      ? "Domínio verificado. A conexão segura será ativada automaticamente."
-      : "DNS ainda pendente. Confira os registros e tente novamente.";
+    if (result.error) throw new Error(`CMS:${result.error}`);
+    message = result.domain?.verified
+      ? "Domínio conectado. A conexão segura será ativada automaticamente."
+      : "DNS ainda pendente. Acompanhe a verificação automática nesta página.";
   } catch (e) {
     message = issue(e);
   }

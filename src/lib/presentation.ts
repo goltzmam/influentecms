@@ -40,10 +40,10 @@ export function presentationSettings(
     ...s,
     experience: {
       navigation: {
-        layout: "horizontal",
+        layout: template === "daily" ? "burger" : "horizontal",
         background: s.color || templates[template].color,
         color: "#ffffff",
-        logoAlign: "left",
+        logoAlign: template === "classic" ? "left" : "center",
         ...s.experience?.navigation,
         customColors:
           s.experience?.navigation?.customColors ??
@@ -68,8 +68,13 @@ export function presentationSettings(
       },
       footer: {
         layout: "columns",
-        background: "#12241e",
-        color: "#ffffff",
+        background:
+          template === "modern"
+            ? "#f4f1ec"
+            : template === "daily"
+              ? s.color || templates[template].color
+              : "#12241e",
+        color: template === "modern" ? "#21152e" : "#ffffff",
         columns: 4,
         showLogo: true,
         showSocials: true,
@@ -122,6 +127,27 @@ export function referenceSections(
         type: "latest",
         title: "Últimas notícias",
       },
+    ];
+  if (template === "modern")
+    return [
+      lead,
+      {
+        id: "10000000-0000-4000-8000-000000000004",
+        type: "latest",
+        title: "Novas histórias",
+      },
+      banner,
+      ...categories
+        .slice(0, 3)
+        .map((c) => ({
+          id: c.id,
+          type: "category" as const,
+          title: c.name,
+          categoryId: c.id,
+          layout: "magazine" as const,
+          position: "category" as const,
+        })),
+      sponsored,
     ];
   const blocks: Section[] = [lead, sponsored];
   [...categories]

@@ -830,7 +830,9 @@
     .carousel-caption h2,
     .carousel-caption p,
     .daily-hero h2,
-    .daily-hero p
+    .daily-hero p,
+    .magazine-cover-copy h2,
+    .magazine-cover-copy p
   ),
 .reference-site
   .visual-section.has-copy-color
@@ -842,7 +844,9 @@
     .carousel-caption h2,
     .carousel-caption p,
     .daily-hero h2,
-    .daily-hero p
+    .daily-hero p,
+    .magazine-cover-copy h2,
+    .magazine-cover-copy p
   ) {
   color: var(--section-copy-color);
 }
@@ -855,7 +859,9 @@
     .carousel-caption h2,
     .carousel-caption p,
     .daily-hero h2,
-    .daily-hero p
+    .daily-hero p,
+    .magazine-cover-copy h2,
+    .magazine-cover-copy p
   ),
 .reference-site
   .visual-section.has-copy-size
@@ -867,7 +873,9 @@
     .carousel-caption h2,
     .carousel-caption p,
     .daily-hero h2,
-    .daily-hero p
+    .daily-hero p,
+    .magazine-cover-copy h2,
+    .magazine-cover-copy p
   ) {
   font-size: var(--section-copy-size);
 }

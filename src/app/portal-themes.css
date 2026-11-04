@@ -1,0 +1,932 @@
+/* Independent editorial compositions. Shared editing controls remain in portal-experience.css. */
+.reference-site.modern {
+  --portal-rule: color-mix(in srgb, var(--portal-ink) 18%, transparent);
+}
+.reference-site.modern .reference-header {
+  background: var(--portal-surface);
+  color: var(--portal-ink);
+  border-bottom: 1px solid var(--portal-rule);
+}
+.reference-site.modern .magazine-utility {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  max-width: 1180px;
+  margin: auto;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--portal-rule);
+  font:
+    11px/1.5 Arial,
+    sans-serif;
+  letter-spacing: 0.07em;
+}
+.reference-site.modern .magazine-utility a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.reference-site.modern .magazine-brandbar {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 1180px;
+  margin: auto;
+  padding: 34px 0;
+  min-height: 140px;
+}
+.reference-site.modern .news-logo {
+  font:
+    700 clamp(30px, 4.5vw, 58px)/1 Georgia,
+    serif;
+  text-transform: none;
+  letter-spacing: -0.06em;
+  color: var(--portal-ink);
+  max-width: 62%;
+  text-align: center;
+}
+.reference-site.modern .news-logo img {
+  max-width: 340px;
+  width: 100%;
+  max-height: 105px;
+}
+.reference-site.modern .magazine-search {
+  position: absolute;
+  right: 0;
+  width: 200px;
+}
+.reference-site.modern .public-search {
+  border-bottom: 1px solid var(--portal-rule);
+  border-radius: 0;
+  background: transparent;
+}
+.reference-site.modern .public-search input,
+.reference-site.modern .public-search button {
+  background: transparent;
+  color: inherit;
+  padding: 9px 5px;
+}
+.reference-site.modern .magazine-navigation-bar {
+  max-width: 1180px;
+  margin: auto;
+  padding: 16px 0;
+  border-top: 1px solid var(--portal-rule);
+}
+.reference-site.modern .portal-navigation {
+  width: 100%;
+  justify-content: center;
+}
+.reference-site.modern .news-nav {
+  display: block;
+  width: auto;
+  font:
+    12px/1.5 Arial,
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.reference-site.modern .portal-nav-inline > ul {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.reference-site.modern .news-nav a,
+.reference-site.modern .menu-toggle {
+  color: inherit;
+}
+.reference-site.modern .news-container {
+  max-width: 1240px;
+  padding-top: 30px;
+}
+.reference-site.modern .magazine-cover-story {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.25fr);
+  min-height: 510px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+.reference-site.modern .magazine-cover-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 36px 48px 36px 0;
+}
+.reference-site.modern .magazine-cover-copy h2 {
+  font-size: clamp(30px, 3.4vw, 49px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+  margin: 20px 0;
+}
+.reference-site.modern .magazine-cover-copy p {
+  font:
+    16px/1.65 Arial,
+    sans-serif;
+  opacity: 0.75;
+  margin: 0 0 24px;
+}
+.reference-site.modern .magazine-byline {
+  font:
+    11px/1.5 Arial,
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.reference-site.modern .magazine-read {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-top: 36px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid;
+  font:
+    12px/1.5 Arial,
+    sans-serif;
+}
+.reference-site.modern .magazine-cover-image {
+  display: block;
+  min-height: 0;
+}
+.reference-site.modern .magazine-cover-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 660px;
+  min-height: 510px;
+  object-fit: cover;
+}
+.reference-site.modern .magazine-story-ribbon {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--portal-rule);
+}
+.reference-site.modern .magazine-ribbon-card {
+  display: grid;
+  grid-template-columns: 95px minmax(0, 1fr);
+  gap: 16px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--portal-rule);
+  padding-right: 20px;
+}
+.reference-site.modern .magazine-ribbon-card:last-child {
+  border-right: 0;
+}
+.reference-site.modern .magazine-ribbon-card .card-image img {
+  width: 95px;
+  height: 115px;
+  object-fit: cover;
+  aspect-ratio: auto;
+}
+.reference-site.modern .magazine-ribbon-card .card-copy {
+  padding: 0;
+}
+.reference-site.modern .magazine-ribbon-card h2 {
+  font-size: 19px;
+  line-height: 1.2;
+  margin: 10px 0;
+}
+.reference-site.modern .news-kicker {
+  color: var(--portal-color);
+  background: transparent;
+  font:
+    10px/1.5 Arial,
+    sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.reference-site.modern .editoria-heading {
+  background: transparent;
+  border-top: 1px solid var(--portal-ink);
+  border-bottom: 1px solid var(--portal-rule);
+  padding: 18px 0;
+  margin-bottom: 26px;
+  color: inherit;
+}
+.reference-site.modern .editoria-heading h2 {
+  font:
+    500 34px/1.1 Georgia,
+    serif;
+  letter-spacing: -0.04em;
+}
+.reference-site.modern .magazine-department-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 26px;
+}
+.reference-site.modern .magazine-department-lead {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+.reference-site.modern .magazine-department-lead .card-image img {
+  aspect-ratio: 4/5;
+  object-fit: cover;
+}
+.reference-site.modern .magazine-department-lead h2 {
+  font-size: 36px;
+  line-height: 1.12;
+  margin: 18px 0;
+}
+.reference-site.modern .magazine-department-card .card-image img {
+  aspect-ratio: 4/3;
+  object-fit: cover;
+}
+.reference-site.modern .magazine-department-card h2 {
+  font-size: 21px;
+  line-height: 1.2;
+  margin: 12px 0;
+}
+.reference-site.modern .news-card {
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+}
+.reference-site.modern .news-card .card-copy {
+  padding: 14px 0 0;
+}
+.reference-site.modern .news-card small {
+  font:
+    10px/1.5 Arial,
+    sans-serif;
+  opacity: 0.65;
+}
+.reference-site.modern .magazine-latest {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+}
+.reference-site.modern .magazine-latest-card .card-image img {
+  aspect-ratio: 4/3;
+  object-fit: cover;
+}
+.reference-site.modern .magazine-latest-card:nth-child(3n + 2) .card-image img {
+  aspect-ratio: 4/5;
+}
+.reference-site.modern .magazine-latest-card h2 {
+  font-size: 27px;
+  line-height: 1.15;
+  margin: 12px 0;
+}
+.reference-site.modern .magazine-ad-break {
+  grid-column: 1/-1;
+}
+.reference-site.modern .sponsored-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  padding: 32px;
+  background: color-mix(in srgb, var(--portal-color) 6%, var(--portal-surface));
+  border: 0;
+}
+.reference-site.modern .sponsored-strip .public-ad {
+  grid-column: 1/-1;
+}
+.reference-site.modern .sponsored-strip img {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+}
+.reference-site.modern .sponsored-strip h2 {
+  font:
+    500 30px/1.2 Georgia,
+    serif;
+}
+.reference-site.modern .article-layout {
+  grid-template-columns: minmax(0, 820px);
+  justify-content: center;
+}
+.reference-site.modern .public-article > h1 {
+  font:
+    500 clamp(36px, 5vw, 66px)/1.05 Georgia,
+    serif;
+  letter-spacing: -0.04em;
+}
+.reference-site.modern .article-aside {
+  width: 100%;
+}
+/* Daily: compact color masthead, cinematic headline, vertical news stream and sidebar. */
+.reference-site.daily .reference-header {
+  background: var(--portal-color);
+  color: #fff;
+  border: 0;
+}
+.reference-site.daily .daily-brandbar {
+  position: relative;
+  max-width: 1240px;
+  margin: auto;
+  padding: 20px 30px;
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1fr;
+  align-items: center;
+  gap: 24px;
+  min-height: 90px;
+}
+.reference-site.daily .daily-brandbar .news-logo {
+  color: inherit;
+  text-align: center;
+  font:
+    800 35px/1 Arial,
+    sans-serif;
+  text-transform: none;
+  letter-spacing: -1.5px;
+}
+.reference-site.daily .news-logo img {
+  width: auto;
+  max-width: 260px;
+  max-height: 65px;
+}
+.reference-site.daily .daily-edition-label {
+  font:
+    12px/1.4 Arial,
+    sans-serif;
+  opacity: 0.9;
+  max-width: 180px;
+}
+.reference-site.daily .daily-search .public-search {
+  background: #ffffff20;
+  border-radius: 5px;
+}
+.reference-site.daily .daily-search input,
+.reference-site.daily .daily-search button {
+  color: inherit;
+  background: transparent;
+}
+.reference-site.daily .daily-search input::placeholder {
+  color: inherit;
+}
+.reference-site.daily .daily-navigation-bar {
+  border-top: 1px solid #ffffff33;
+  max-width: 1180px;
+  margin: auto;
+  padding: 10px 0;
+}
+.reference-site.daily .daily-navigation-bar .portal-navigation {
+  justify-content: center;
+}
+.reference-site.daily .news-nav {
+  display: block;
+  width: auto;
+}
+.reference-site.daily .portal-nav-inline > ul {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.reference-site.daily .news-nav a,
+.reference-site.daily .menu-toggle {
+  color: inherit;
+}
+.reference-site.daily .news-container {
+  max-width: 1180px;
+  padding: 26px 30px 48px;
+}
+.reference-site.daily .daily-cover {
+  display: block;
+  margin: 0 0 35px;
+}
+.reference-site.daily .daily-hero > a {
+  min-height: 470px;
+  height: clamp(350px, 43vw, 580px);
+  border-radius: 0;
+  display: block;
+}
+.reference-site.daily .daily-hero > a > div {
+  max-width: 900px;
+  padding: 36px;
+}
+.reference-site.daily .daily-hero h2 {
+  font:
+    800 clamp(28px, 3.5vw, 48px)/1.1 Arial,
+    sans-serif;
+  letter-spacing: -1.5px;
+  text-transform: uppercase;
+  margin: 12px 0;
+  color: inherit;
+}
+.reference-site.daily .daily-hero p {
+  font:
+    15px/1.5 Arial,
+    sans-serif;
+  max-width: 760px;
+}
+.reference-site.daily .daily-hero .news-kicker {
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+}
+.reference-site.daily .daily-feed {
+  display: grid;
+  grid-template-columns: minmax(0, 2.25fr) minmax(240px, 1fr);
+  gap: 55px;
+}
+.reference-site.daily .daily-feed > .news-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.reference-site.daily .daily-feed > .news-grid > .news-card {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.85fr) minmax(0, 1.25fr);
+  gap: 22px;
+  border: 0;
+  border-bottom: 1px solid #dddddd;
+  padding: 24px 0;
+  border-radius: 0;
+  background: transparent;
+}
+.reference-site.daily .daily-feed > .news-grid > .news-card:first-child {
+  padding-top: 0;
+}
+.reference-site.daily .daily-feed .card-image img {
+  width: 100%;
+  aspect-ratio: 16/10;
+  height: auto;
+  object-fit: cover;
+  border-radius: 5px;
+}
+.reference-site.daily .daily-feed .card-copy {
+  padding: 0;
+}
+.reference-site.daily .daily-feed .news-card h2 {
+  font:
+    700 24px/1.17 Arial,
+    sans-serif;
+  color: var(--portal-color);
+  margin: 8px 0 12px;
+  letter-spacing: -0.55px;
+}
+.reference-site.daily .news-kicker {
+  color: #555;
+  background: transparent;
+  font:
+    700 11px/1.4 Arial,
+    sans-serif;
+}
+.reference-site.daily .daily-feed-sidebar {
+  position: static;
+  align-self: start;
+  padding: 22px;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: transparent;
+}
+.reference-site.daily .daily-feed-sidebar h3 {
+  color: var(--portal-color);
+  padding-bottom: 16px;
+  border-bottom: 1px solid #dedede;
+  font:
+    700 20px/1.3 Arial,
+    sans-serif;
+}
+.reference-site.daily .daily-feed-sidebar .news-card {
+  display: block;
+  border: 0;
+  border-bottom: 1px solid #e5e5e5;
+  background: transparent;
+  padding: 18px 0;
+}
+.reference-site.daily .daily-feed-sidebar .card-image {
+  float: right;
+  width: 75px;
+  margin: 0 0 8px 12px;
+}
+.reference-site.daily .daily-feed-sidebar h2 {
+  font:
+    700 16px/1.3 Arial,
+    sans-serif;
+  color: var(--portal-color);
+}
+.reference-site.daily .daily-feed-sidebar .news-card:after {
+  content: "";
+  display: block;
+  clear: both;
+}
+.reference-site.daily .editoria-heading {
+  background: transparent;
+  color: var(--portal-ink);
+  border: 0;
+  border-bottom: 2px solid var(--portal-color);
+  padding: 12px 0;
+  margin-bottom: 24px;
+}
+.reference-site.daily .editoria-heading h2 {
+  font:
+    700 26px/1.2 Arial,
+    sans-serif;
+}
+.reference-site.daily .daily-department-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 20px 32px;
+}
+.reference-site.daily .daily-department-lead {
+  grid-row: span 3;
+}
+.reference-site.daily .daily-department-lead .card-image img {
+  aspect-ratio: 16/10;
+  object-fit: cover;
+}
+.reference-site.daily .daily-department-lead h2 {
+  font:
+    700 30px/1.12 Arial,
+    sans-serif;
+  color: var(--portal-color);
+}
+.reference-site.daily .daily-department-item {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 16px;
+  border: 0;
+  border-bottom: 1px solid #ddd;
+}
+.reference-site.daily .daily-department-item .card-image img {
+  aspect-ratio: 4/3;
+  object-fit: cover;
+}
+.reference-site.daily .daily-department-item h2 {
+  font:
+    700 19px/1.2 Arial,
+    sans-serif;
+  color: var(--portal-color);
+}
+.reference-site.daily .daily-department-item .card-copy {
+  padding: 0;
+}
+.reference-site.daily .sponsored-strip {
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  padding: 22px;
+}
+/* Logo placement remains an explicit user control. */
+.reference-site .editorial-logo-left .magazine-brandbar {
+  justify-content: flex-start;
+}
+.reference-site .editorial-logo-left .news-logo {
+  text-align: left;
+}
+.reference-site .editorial-logo-left .daily-brandbar {
+  grid-template-columns: 1.5fr 1fr;
+}
+.reference-site .editorial-logo-left .daily-brandbar .news-logo {
+  grid-column: 1;
+  grid-row: 1;
+}
+.reference-site .editorial-logo-left .daily-edition-label {
+  display: none;
+}
+@media (max-width: 1100px) {
+  .reference-site.modern .magazine-utility,
+  .reference-site.modern .magazine-brandbar,
+  .reference-site.modern .magazine-navigation-bar {
+    margin-left: 28px;
+    margin-right: 28px;
+  }
+  .reference-site.modern .magazine-search {
+    width: 155px;
+  }
+  .reference-site.modern .magazine-cover-copy {
+    padding-right: 28px;
+  }
+  .reference-site.modern .magazine-ribbon-card {
+    grid-template-columns: 75px minmax(0, 1fr);
+    gap: 12px;
+    padding-right: 10px;
+  }
+  .reference-site.modern .magazine-ribbon-card .card-image img {
+    width: 75px;
+  }
+  .reference-site.daily .daily-feed {
+    gap: 30px;
+  }
+}
+@media (max-width: 760px) {
+  .reference-site.modern .magazine-utility {
+    margin: 0 18px;
+    font-size: 9px;
+  }
+  .reference-site.modern .magazine-utility > a {
+    display: none;
+  }
+  .reference-site.modern .magazine-brandbar {
+    min-height: 100px;
+    padding: 24px 0;
+    margin: 0 18px;
+    justify-content: flex-start;
+  }
+  .reference-site.modern .news-logo {
+    max-width: 100%;
+    font-size: 36px;
+    text-align: left;
+  }
+  .reference-site.modern .magazine-search {
+    display: none;
+  }
+  .reference-site.modern .magazine-navigation-bar {
+    margin: 0 18px;
+    padding: 10px 0;
+  }
+  .reference-site.modern .portal-navigation {
+    justify-content: flex-start;
+  }
+  .reference-site.modern .news-container {
+    padding: 22px 18px 36px;
+  }
+  .reference-site.modern .magazine-cover-story {
+    grid-template-columns: 1fr;
+  }
+  .reference-site.modern .magazine-cover-copy {
+    grid-row: 2;
+    padding: 26px 0;
+  }
+  .reference-site.modern .magazine-cover-image {
+    grid-row: 1;
+  }
+  .reference-site.modern .magazine-cover-image img {
+    height: 360px;
+    min-height: 0;
+  }
+  .reference-site.modern .magazine-cover-copy h2 {
+    font-size: 36px;
+    margin: 12px 0;
+  }
+  .reference-site.modern .magazine-read {
+    margin-top: 22px;
+  }
+  .reference-site.modern .magazine-story-ribbon {
+    grid-template-columns: 1fr;
+    padding: 0;
+    gap: 0;
+  }
+  .reference-site.modern .magazine-ribbon-card {
+    grid-template-columns: 95px minmax(0, 1fr);
+    border-right: 0;
+    border-bottom: 1px solid var(--portal-rule);
+    padding: 20px 0;
+  }
+  .reference-site.modern .magazine-ribbon-card .card-image img {
+    width: 95px;
+    height: 105px;
+  }
+  .reference-site.modern .magazine-department-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 18px;
+  }
+  .reference-site.modern .magazine-department-lead {
+    grid-column: 1/-1;
+    grid-row: auto;
+  }
+  .reference-site.modern .magazine-department-lead .card-image img {
+    aspect-ratio: 4/3;
+  }
+  .reference-site.modern .magazine-department-card h2 {
+    font-size: 20px;
+  }
+  .reference-site.modern .magazine-latest {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .reference-site.modern .magazine-latest-card:nth-child(n) .card-image img {
+    aspect-ratio: 4/3;
+  }
+  .reference-site.modern .sponsored-strip {
+    grid-template-columns: 1fr;
+    padding: 22px;
+    gap: 22px;
+  }
+  .reference-site.daily .daily-brandbar {
+    grid-template-columns: 1fr;
+    min-height: 80px;
+    padding: 22px 18px;
+  }
+  .reference-site.daily .daily-edition-label,
+  .reference-site.daily .daily-search {
+    display: none;
+  }
+  .reference-site.daily .daily-brandbar .news-logo {
+    font-size: 30px;
+  }
+  .reference-site.daily .daily-navigation-bar {
+    padding: 8px 18px;
+  }
+  .reference-site.daily .daily-navigation-bar .portal-navigation {
+    justify-content: flex-start;
+  }
+  .reference-site.daily .news-container {
+    padding: 20px 18px 36px;
+  }
+  .reference-site.daily .daily-hero > a {
+    height: 430px;
+    min-height: 0;
+  }
+  .reference-site.daily .daily-hero > a > div {
+    padding: 22px;
+  }
+  .reference-site.daily .daily-hero h2 {
+    font-size: 30px;
+    letter-spacing: -0.8px;
+  }
+  .reference-site.daily .daily-hero p {
+    font-size: 13px;
+  }
+  .reference-site.daily .daily-feed {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .reference-site.daily .daily-feed > .news-grid > .news-card {
+    grid-template-columns: 115px minmax(0, 1fr);
+    gap: 16px;
+    padding: 20px 0;
+  }
+  .reference-site.daily .daily-feed .news-card h2 {
+    font-size: 20px;
+  }
+  .reference-site.daily .daily-feed .card-image img {
+    height: 100px;
+    aspect-ratio: auto;
+  }
+  .reference-site.daily .daily-department-grid {
+    grid-template-columns: 1fr;
+  }
+  .reference-site.daily .daily-department-lead {
+    grid-row: auto;
+  }
+  .reference-site.daily .daily-department-item {
+    grid-template-columns: 100px minmax(0, 1fr);
+    padding-bottom: 18px;
+  }
+}
+/* Embedded mobile preview uses the same compositions as a phone viewport. */
+.visual-canvas.mobile .reference-site .magazine-cover-story,
+.visual-canvas.mobile .reference-site .magazine-story-ribbon,
+.visual-canvas.mobile .reference-site .magazine-latest,
+.visual-canvas.mobile .reference-site .daily-feed,
+.visual-canvas.mobile .reference-site .daily-department-grid {
+  grid-template-columns: 1fr;
+}
+.visual-canvas.mobile .reference-site .magazine-search,
+.visual-canvas.mobile .reference-site .daily-search,
+.visual-canvas.mobile .reference-site .daily-edition-label {
+  display: none;
+}
+.visual-canvas.mobile .reference-site .magazine-cover-copy {
+  grid-row: 2;
+  padding: 24px 0;
+}
+.visual-canvas.mobile .reference-site .magazine-cover-image {
+  grid-row: 1;
+}
+.visual-canvas.mobile .reference-site .magazine-cover-image img {
+  min-height: 0;
+  height: 320px;
+}
+.visual-canvas.mobile .reference-site .daily-brandbar {
+  grid-template-columns: 1fr;
+}
+.visual-canvas.mobile .reference-site .magazine-department-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.visual-canvas.mobile .reference-site .magazine-department-lead {
+  grid-column: 1/-1;
+  grid-row: auto;
+}
+.reference-site:is(.modern, .daily) .portal-navigation {
+  display: flex;
+  align-items: center;
+}
+.reference-site:is(.modern, .daily)
+  :is(.nav-mode-burger, .nav-mode-sidebar)
+  .portal-nav-inline {
+  display: none;
+}
+.reference-site:is(.modern, .daily) .portal-nav-inline details > ul a {
+  color: var(--drawer-color, #17342a);
+}
+.reference-site.modern .magazine-cover-story:not(:has(.magazine-cover-image)) {
+  grid-template-columns: 1fr;
+}
+.reference-site.daily
+  .daily-feed
+  > .news-grid
+  > .news-card:not(:has(.card-image)) {
+  grid-template-columns: 1fr;
+}
+@media (max-width: 760px) {
+  .reference-site:is(.modern, .daily) .portal-nav-inline {
+    display: none;
+  }
+  .reference-site:is(.modern, .daily) .menu-toggle {
+    display: flex;
+  }
+}
+.visual-canvas.mobile .reference-site:is(.modern, .daily) .portal-nav-inline {
+  display: none;
+}
+.visual-canvas.mobile .reference-site:is(.modern, .daily) .menu-toggle {
+  display: flex;
+}
+/* Footer links follow the chosen footer color, including light palettes. */
+.reference-site .news-footer nav a,
+.reference-site .news-footer section > a:not(.news-logo),
+.reference-site .news-footer .footer-note {
+  color: inherit;
+}
+.reference-site .news-footer .footer-commercial > a {
+  color: inherit !important;
+}
+.reference-site.modern .news-footer .news-logo {
+  max-width: 100%;
+  text-align: left;
+}
+.reference-site.daily .daily-hero > a {
+  display: flex;
+  align-items: flex-end;
+}
+.reference-site.modern .magazine-latest > .feed-ad {
+  grid-column: 1/-1;
+}
+.reference-site.modern .magazine-video-feature {
+  padding: 30px 0;
+  border-bottom: 1px solid var(--portal-rule);
+}
+.reference-site.modern .magazine-video-feature .frontpage-rail {
+  max-width: 780px;
+  margin: auto;
+}
+.reference-site.modern .magazine-video-feature iframe {
+  width: 100%;
+  aspect-ratio: 16/9;
+  height: auto;
+}
+.reference-site.modern .magazine-video-feature .reference-video h2 {
+  font:
+    500 28px/1.2 Georgia,
+    serif;
+}
+.reference-site.modern .news-newsletter {
+  background: var(--portal-ink);
+  color: var(--portal-surface);
+}
+.reference-site.modern .news-newsletter h2,
+.reference-site.modern .news-newsletter a {
+  color: inherit;
+}
+.reference-site.modern .news-newsletter label {
+  color: inherit;
+}
+.reference-site.daily .daily-masthead {
+  position: relative;
+}
+.reference-site.daily .daily-masthead.header-sticky {
+  position: sticky;
+}
+.reference-site.daily
+  :is(.editorial-menu-burger, .editorial-menu-sidebar)
+  .daily-navigation-bar {
+  position: absolute;
+  top: 20px;
+  left: max(30px, calc((100% - 1180px) / 2));
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+.reference-site.daily
+  :is(.editorial-menu-burger, .editorial-menu-sidebar)
+  .daily-edition-label {
+  visibility: hidden;
+}
+.reference-site.daily
+  :is(.editorial-menu-burger, .editorial-menu-sidebar)
+  .menu-toggle {
+  border-color: #ffffff66;
+}
+@media (max-width: 760px) {
+  .reference-site.daily
+    :is(.editorial-menu-burger, .editorial-menu-sidebar)
+    .daily-navigation-bar {
+    top: 22px;
+    left: 18px;
+  }
+  .reference-site.daily
+    :is(.editorial-menu-burger, .editorial-menu-sidebar)
+    .menu-toggle {
+    padding: 7px;
+  }
+  .reference-site.daily
+    :is(.editorial-menu-burger, .editorial-menu-sidebar)
+    .menu-toggle
+    span {
+    display: none;
+  }
+  .reference-site.daily
+    :is(.editorial-menu-burger, .editorial-menu-sidebar)
+    .daily-brandbar
+    .news-logo {
+    max-width: calc(100% - 80px);
+    margin: auto;
+  }
+}

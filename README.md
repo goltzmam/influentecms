@@ -5,7 +5,7 @@ CMS privado para administrar múltiplos portais de notícias. Next.js App Router
 ## Recursos
 
 - Dashboard e seletor de portais com estatísticas reais do acervo.
-- Criação de portal com nome, slug, logotipo, cor e escolha de Influente News ou Revista Influente.
+- Criação de portal com nome, slug, logotipo, cor e escolha de Influente News, Revista Influente ou Jornal Diário.
 - Notícias com TipTap, imagens, YouTube, categoria, tags, autor, SEO, rascunho, prévia privada, publicação, agendamento, edição e exclusão.
 - Homepage com blocos predefinidos reordenáveis por arraste ou teclado: recentes, destaques escolhidos, categoria, banners, texto e imagem com link. Rascunho separado da versão pública, prévia do próprio template em tempo real e prévia completa da versão salva.
 - Identidade, fontes, favicon, menus, redes sociais, cabeçalho, rodapé e páginas institucionais. Troca de template sem perda do conteúdo.
@@ -16,11 +16,17 @@ CMS privado para administrar múltiplos portais de notícias. Next.js App Router
 
 ## Estrutura visual dos portais
 
-Os templates **Influente News** e **Revista Influente** compartilham a estrutura do PDF de referência fornecido pelo proprietário: cabeçalho roxo, marca e navegação por colunas, busca e WhatsApp, faixa publicitária, manchetes com seleção numerada, vídeo lateral, chamada com lista de notícias, publieditorial, editorias com patrocínio, redes sociais, contato, novidades e rodapé comercial. A tipografia e toda a identidade podem ser personalizadas por portal. Os identificadores internos `classic` e `modern` foram preservados para manter compatibilidade com os dados existentes.
+Os três temas possuem composições independentes, mantendo dados e controles compartilhados:
+
+- **Influente News** (`classic`): PDF fornecido, cabeçalho com navegação em colunas, carrossel numerado, vídeo lateral, resumo de notícias e mosaicos de editorias.
+- **Revista Influente** (`modern`): marca editorial centralizada, capa dividida entre texto e imagem, faixa de três histórias, grade assimétrica de editorias e últimas histórias em cartões com imagens de proporções variadas.
+- **Jornal Diário** (`daily`): cabeçalho compacto, manchete ampla, notícias em feed vertical com miniaturas e títulos, coluna lateral e editorias com chamada principal e lista.
+
+Trocar o tema atualiza a composição sem apagar notícias, mídia ou seções personalizadas. Cores, menus, formulário, publicidade e rodapé continuam editáveis em todos.
 
 Em **Personalização**, altere as quatro cores da paleta, logo/favicon, assinatura, vídeo YouTube, WhatsApp, títulos e textos dos formulários, contatos, cartões sociais e SEO/OG da capa. Escolha navegação automática por categorias ou apenas seus links; ordene os links pelas setas. Os cartões sociais usam imagens e links enviados pelo proprietário, sem inventar seguidores ou integrar dados de redes sociais silenciosamente.
 
-Em **Homepage**, use **Usar estrutura do PDF** para montar um rascunho com a capa de referência e editorias. O botão modifica somente a composição no editor até salvar/publicar. Reordene os blocos por mouse ou teclado, selecione manchetes e publieditorial, escolha mosaico de notícias ou composição de revista e configure marca, cor e link de patrocinadores. Escolha posições de anúncios também entre editorias e ao lado do publieditorial. A prévia usa os mesmos componentes das páginas públicas. Versões publicadas anteriormente não são sobrescritas pela atualização.
+Em **Homepage**, use **Usar composição editorial** para montar um rascunho com a capa de referência e editorias. O botão modifica somente a composição no editor até salvar/publicar. Reordene os blocos por mouse ou teclado, selecione manchetes e publieditorial, escolha mosaico de notícias ou composição de revista e configure marca, cor e link de patrocinadores. Escolha posições de anúncios também entre editorias e ao lado do publieditorial. A prévia usa os mesmos componentes das páginas públicas. Versões publicadas anteriormente não são sobrescritas pela atualização.
 
 A migration `202611030003_audience.sql` adiciona mensagens e inscrições por portal com RLS e RPCs públicas validadas e limitadas por frequência. **Leitores e contato** mostra os registros privados e exporta CSV; o formulário solicita consentimento. Inscrição registra interesse em receber novidades, sem criar conta de acesso e sem disparar campanhas de e-mail automaticamente. Para isso, integre posteriormente uma ferramenta de envio. Os dados de teste e as imagens geradas para capturas são exclusivos dos testes e removidos ao final.
 

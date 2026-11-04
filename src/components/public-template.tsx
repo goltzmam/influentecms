@@ -104,6 +104,98 @@ function FooterLinks({
     </ul>
   );
 }
+function EditorialHeader({
+  portal,
+  settings: s,
+  links,
+  basePath,
+  preview,
+}: {
+  portal: Portal;
+  settings: Portal["settings"];
+  links: MenuItem[];
+  basePath: string;
+  preview: boolean;
+}) {
+  const daily = portal.template === "daily";
+  const brand = (
+    <Link className="news-logo" href={basePath || "/"}>
+      {s.logo ? (
+        <img src={safeLink(s.logo)} alt={portal.name} />
+      ) : (
+        <span>{portal.name}</span>
+      )}
+    </Link>
+  );
+  const navigation = (
+    <PortalNavigation
+      items={links}
+      basePath={basePath}
+      name={portal.name}
+      logo={s.logo}
+      config={s.experience?.navigation}
+    />
+  );
+  const search = (
+    <form className="public-search" action={`${basePath}/busca`}>
+      <input
+        aria-label="Buscar notícias"
+        type="search"
+        name="q"
+        placeholder="O que você procura?"
+        required
+        disabled={preview}
+      />
+      <button disabled={preview}>Buscar</button>
+    </form>
+  );
+  return (
+    <header
+      data-edit-region="navigation"
+      className={`reference-header editorial-header editorial-menu-${s.experience?.navigation?.layout || "horizontal"} ${daily ? "daily-masthead" : "magazine-masthead"} ${s.experience?.navigation?.sticky ? "header-sticky" : ""} editorial-logo-${s.experience?.navigation?.logoAlign || "center"}`}
+      style={{
+        backgroundColor: s.experience?.navigation?.customColors
+          ? s.experience.navigation.background
+          : undefined,
+        color: s.experience?.navigation?.customColors
+          ? s.experience.navigation.color
+          : undefined,
+      }}
+    >
+      {daily ? (
+        <>
+          <div className="daily-brandbar">
+            <div className="daily-edition-label">{s.tagline}</div>
+            {brand}
+            <div className="daily-search">{search}</div>
+          </div>
+          <div className="daily-navigation-bar">{navigation}</div>
+        </>
+      ) : (
+        <>
+          <div className="magazine-utility">
+            <span>{s.tagline}</span>
+            {s.whatsappUrl && (
+              <a
+                href={safeLink(s.whatsappUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Acompanhe no WhatsApp <ArrowUpRight size={14} />
+              </a>
+            )}
+          </div>
+          <div className="magazine-brandbar">
+            {brand}
+            <div className="magazine-search">{search}</div>
+          </div>
+          <div className="magazine-navigation-bar">{navigation}</div>
+        </>
+      )}
+      {s.header && <p className="header-editorial-note">{s.header}</p>}
+    </header>
+  );
+}
 export function NewsShell({
   portal,
   categories,
@@ -154,75 +246,85 @@ export function NewsShell({
           PRÉ-VISUALIZAÇÃO PRIVADA · Conteúdo não publicado
         </div>
       )}
-      <header
-        data-edit-region="navigation"
-        className={`reference-header nav-logo-${s.experience?.navigation?.logoAlign || "left"} ${s.experience?.navigation?.sticky ? "header-sticky" : ""}`}
-        style={{
-          backgroundColor: s.experience?.navigation?.customColors
-            ? s.experience.navigation.background
-            : undefined,
-          color: s.experience?.navigation?.customColors
-            ? s.experience.navigation.color
-            : undefined,
-        }}
-      >
-        <div className="news-masthead">
-          <div className="brand-column">
-            <Link className="news-logo" href={basePath || "/"}>
-              {s.logo ? (
-                <img src={safeLink(s.logo)} alt={portal.name} />
+      {portal.template === "classic" ? (
+        <header
+          data-edit-region="navigation"
+          className={`reference-header nav-logo-${s.experience?.navigation?.logoAlign || "left"} ${s.experience?.navigation?.sticky ? "header-sticky" : ""}`}
+          style={{
+            backgroundColor: s.experience?.navigation?.customColors
+              ? s.experience.navigation.background
+              : undefined,
+            color: s.experience?.navigation?.customColors
+              ? s.experience.navigation.color
+              : undefined,
+          }}
+        >
+          <div className={`news-masthead masthead-${portal.template}`}>
+            <div className="brand-column">
+              <Link className="news-logo" href={basePath || "/"}>
+                {s.logo ? (
+                  <img src={safeLink(s.logo)} alt={portal.name} />
+                ) : (
+                  <span>{portal.name}</span>
+                )}
+              </Link>
+              {s.tagline && <p className="brand-tagline">{s.tagline}</p>}
+            </div>
+            <PortalNavigation
+              items={links}
+              basePath={basePath}
+              name={portal.name}
+              logo={s.logo}
+              config={s.experience?.navigation}
+            />
+            <div className="header-tools">
+              {preview ? (
+                <div className="public-search">
+                  <input
+                    aria-label="Buscar notícias"
+                    placeholder={`Encontre no ${portal.name}`}
+                    disabled
+                  />
+                  <button type="button" disabled>
+                    Buscar
+                  </button>
+                </div>
               ) : (
-                <span>{portal.name}</span>
+                <form className="public-search" action={`${basePath}/busca`}>
+                  <input
+                    aria-label="Buscar notícias"
+                    type="search"
+                    name="q"
+                    placeholder={`Encontre no ${portal.name}`}
+                    required
+                  />
+                  <button>Buscar</button>
+                </form>
               )}
-            </Link>
-            {s.tagline && <p className="brand-tagline">{s.tagline}</p>}
+              {s.whatsappUrl && (
+                <a
+                  className="header-whatsapp"
+                  href={safeLink(s.whatsappUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle size={17} />
+                  <span>{s.whatsappText}</span>
+                </a>
+              )}
+            </div>
           </div>
-          <PortalNavigation
-            items={links}
-            basePath={basePath}
-            name={portal.name}
-            logo={s.logo}
-            config={s.experience?.navigation}
-          />
-          <div className="header-tools">
-            {preview ? (
-              <div className="public-search">
-                <input
-                  aria-label="Buscar notícias"
-                  placeholder={`Encontre no ${portal.name}`}
-                  disabled
-                />
-                <button type="button" disabled>
-                  Buscar
-                </button>
-              </div>
-            ) : (
-              <form className="public-search" action={`${basePath}/busca`}>
-                <input
-                  aria-label="Buscar notícias"
-                  type="search"
-                  name="q"
-                  placeholder={`Encontre no ${portal.name}`}
-                  required
-                />
-                <button>Buscar</button>
-              </form>
-            )}
-            {s.whatsappUrl && (
-              <a
-                className="header-whatsapp"
-                href={safeLink(s.whatsappUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle size={17} />
-                <span>{s.whatsappText}</span>
-              </a>
-            )}
-          </div>
-        </div>
-        {s.header && <p className="header-editorial-note">{s.header}</p>}
-      </header>
+          {s.header && <p className="header-editorial-note">{s.header}</p>}
+        </header>
+      ) : (
+        <EditorialHeader
+          portal={portal}
+          settings={s}
+          links={links}
+          basePath={basePath}
+          preview={preview}
+        />
+      )}
       <main className="news-container">
         <Campaigns campaigns={campaigns} position="header" />
         <Campaigns campaigns={campaigns} position="before-content" />
@@ -401,7 +503,10 @@ export function NewsShell({
               {s.experience?.footer?.advertImage && (
                 <a
                   className="footer-advert-image"
-                  href={safeLink(s.experience.footer.advertLink || "")}
+                  href={siteLink(
+                    s.experience.footer.advertLink || "",
+                    basePath,
+                  )}
                   target="_blank"
                   rel="sponsored noopener noreferrer"
                 >
@@ -433,7 +538,7 @@ export function NewsShell({
               {s.experience?.footer?.advertLink ? (
                 <a
                   className="footer-advert-cta"
-                  href={safeLink(s.experience.footer.advertLink)}
+                  href={siteLink(s.experience.footer.advertLink, basePath)}
                 >
                   <strong>
                     {s.experience.footer.advertTitle || "Anuncie com a gente"}
@@ -576,6 +681,31 @@ function ArticleCard({
     </article>
   );
 }
+function InlineFeedAds({
+  campaigns,
+  index,
+}: {
+  campaigns: Campaign[];
+  index: number;
+}) {
+  return (
+    <>
+      {campaigns
+        .filter(
+          (c) =>
+            c.position === "inline" &&
+            !c.creative?.sectionIds?.length &&
+            !!c.creative?.repeatEvery &&
+            (index + 1) % c.creative.repeatEvery === 0,
+        )
+        .map((c) => (
+          <div className="feed-ad" key={c.id}>
+            <AdCreative campaign={c} />
+          </div>
+        ))}
+    </>
+  );
+}
 export function NewsGrid({
   articles,
   categories,
@@ -599,19 +729,7 @@ export function NewsGrid({
             categories={categories}
             basePath={basePath}
           />
-          {campaigns
-            .filter(
-              (c) =>
-                c.position === "inline" &&
-                !c.creative?.sectionIds?.length &&
-                !!c.creative?.repeatEvery &&
-                (index + 1) % c.creative.repeatEvery === 0,
-            )
-            .map((c) => (
-              <div className="feed-ad" key={c.id}>
-                <AdCreative campaign={c} />
-              </div>
-            ))}
+          <InlineFeedAds campaigns={campaigns} index={index} />
         </Fragment>
       ))}
     </div>
@@ -661,9 +779,61 @@ function Lead({
   campaigns: Campaign[];
   basePath: string;
 }) {
+  if (portal.template === "modern") {
+    const cover = articles[0];
+    if (!cover) return null;
+    return (
+      <div className="magazine-cover" data-theme-composition="magazine-cover">
+        <div className="magazine-cover-story">
+          <div className="magazine-cover-copy">
+            <CategoryLabel article={cover} categories={categories} />
+            <Link href={`${basePath}/noticia/${cover.slug}`}>
+              <h2>{cover.title}</h2>
+            </Link>
+            {cover.subtitle && <p>{cover.subtitle}</p>}
+            <span className="magazine-byline">Por {cover.author}</span>
+            <Link
+              className="magazine-read"
+              href={`${basePath}/noticia/${cover.slug}`}
+            >
+              Ler reportagem <ArrowUpRight size={18} />
+            </Link>
+          </div>
+          {cover.cover_url && (
+            <Link
+              className="magazine-cover-image"
+              href={`${basePath}/noticia/${cover.slug}`}
+              tabIndex={-1}
+              aria-hidden="true"
+            >
+              <NewsImage src={cover.cover_url} alt={cover.cover_alt} priority />
+            </Link>
+          )}
+        </div>
+        {articles.length > 1 && (
+          <div className="magazine-story-ribbon">
+            {articles.slice(1, 4).map((a) => (
+              <ArticleCard
+                key={a.id}
+                article={a}
+                categories={categories}
+                basePath={basePath}
+                variant="magazine-ribbon-card"
+              />
+            ))}
+          </div>
+        )}
+        {youtubeEmbed(portal.settings.videoUrl || "") && (
+          <div className="magazine-video-feature">
+            <VideoRail portal={portal} campaigns={[]} />
+          </div>
+        )}
+      </div>
+    );
+  }
   if (portal.template === "daily")
     return (
-      <div className="daily-cover">
+      <div className="daily-cover" data-theme-composition="daily-cover">
         <div className="daily-hero">
           {articles[0] && (
             <a href={`${basePath}/noticia/${articles[0].slug}`}>
@@ -681,23 +851,16 @@ function Lead({
             </a>
           )}
         </div>
-        <div className="daily-highlights">
-          {articles.slice(1, 4).map((article) => (
-            <ArticleCard
-              key={article.id}
-              article={article}
-              categories={categories}
-              basePath={basePath}
-            />
-          ))}
-        </div>
       </div>
     );
   const hasRail =
     !!youtubeEmbed(portal.settings.videoUrl || "") ||
     campaigns.some((c) => c.position === "sidebar");
   return (
-    <div className={`frontpage-grid ${hasRail ? "with-rail" : ""}`}>
+    <div
+      data-theme-composition="classic-cover"
+      className={`frontpage-grid ${hasRail ? "with-rail" : ""}`}
+    >
       <div className="frontpage-main">
         <LeadCarousel
           articles={articles.slice(0, 4)}
@@ -755,12 +918,14 @@ function Sponsor({ section }: { section: Section }) {
   ) : null;
 }
 function CategorySection({
+  template,
   section,
   articles,
   categories,
   campaigns,
   basePath,
 }: {
+  template: Portal["template"];
   section: Section;
   articles: Article[];
   categories: Category[];
@@ -777,6 +942,66 @@ function CategorySection({
     section.title ||
     categories.find((c) => c.id === section.categoryId)?.name ||
     "Notícias";
+  if (template === "modern")
+    return (
+      <section
+        className="reference-category magazine-department"
+        data-theme-composition="magazine-department"
+      >
+        <div className="editoria-heading">
+          <h2>{title}</h2>
+          <Sponsor section={section} />
+        </div>
+        <div className="magazine-department-grid">
+          {selected.slice(0, 5).map((a, i) => (
+            <ArticleCard
+              key={a.id}
+              article={a}
+              categories={categories}
+              basePath={basePath}
+              variant={
+                i === 0
+                  ? "magazine-department-lead"
+                  : "magazine-department-card"
+              }
+            />
+          ))}
+        </div>
+        <Campaigns
+          campaigns={campaigns}
+          position={section.position || "category"}
+        />
+      </section>
+    );
+  if (template === "daily")
+    return (
+      <section
+        className="reference-category daily-department"
+        data-theme-composition="daily-department"
+      >
+        <div className="editoria-heading">
+          <h2>{title}</h2>
+          <Sponsor section={section} />
+        </div>
+        <div className="daily-department-grid">
+          {selected.slice(0, 4).map((a, i) => (
+            <ArticleCard
+              key={a.id}
+              article={a}
+              categories={categories}
+              basePath={basePath}
+              variant={
+                i === 0 ? "daily-department-lead" : "daily-department-item"
+              }
+            />
+          ))}
+        </div>
+        <Campaigns
+          campaigns={campaigns}
+          position={section.position || "category"}
+        />
+      </section>
+    );
   const magazine = section.layout === "magazine";
   return (
     <section
@@ -878,8 +1103,17 @@ export function Homepage({
   const blocks = saved.length
     ? saved
     : referenceSections(categories, portal.template);
+  const dailyLeadIds = new Set(
+    blocks
+      .filter((b) => b.type === "lead" || b.type === "featured")
+      .map((b) => (b.articleIds?.length ? b.articleIds[0] : articles[0]?.id))
+      .filter(Boolean),
+  );
   return (
-    <div className="reference-home">
+    <div
+      className={`reference-home home-${portal.template}`}
+      data-theme={portal.template}
+    >
       <h1 className="sr-only">{portal.name} — últimas notícias</h1>
       {!articles.length &&
         !blocks.some((s) => s.type === "text" || s.type === "image") && (
@@ -911,6 +1145,7 @@ export function Homepage({
           if (s.type === "category")
             return (
               <CategorySection
+                template={portal.template}
                 key={s.id}
                 section={s}
                 articles={articles}
@@ -1075,16 +1310,38 @@ export function Homepage({
                   campaigns={campaigns}
                   basePath={basePath}
                 />
+              ) : portal.template === "modern" ? (
+                <div
+                  className="magazine-latest"
+                  data-theme-composition="magazine-latest"
+                >
+                  {picks.slice(0, 9).map((a, index) => (
+                    <Fragment key={a.id}>
+                      <ArticleCard
+                        article={a}
+                        categories={categories}
+                        basePath={basePath}
+                        variant="magazine-latest-card"
+                      />
+                      <InlineFeedAds campaigns={campaigns} index={index} />
+                    </Fragment>
+                  ))}
+                  <div className="magazine-ad-break">
+                    <Campaigns campaigns={campaigns} position="sidebar" />
+                  </div>
+                </div>
               ) : portal.template === "daily" ? (
                 <div className="daily-feed">
                   <NewsGrid
                     campaigns={campaigns}
-                    articles={picks.slice(0, 30)}
+                    articles={picks
+                      .filter((a) => !dailyLeadIds.has(a.id))
+                      .slice(0, 30)}
                     categories={categories}
                     basePath={basePath}
                   />
                   <aside className="daily-feed-sidebar">
-                    <h3>Mais lidas</h3>
+                    <h3>Em destaque</h3>
                     {picks.slice(0, 5).map((article) => (
                       <ArticleCard
                         key={article.id}
@@ -1094,7 +1351,7 @@ export function Homepage({
                         variant="compact"
                       />
                     ))}
-                    <Campaigns campaigns={campaigns} position="sidebar" />
+                    <VideoRail portal={portal} campaigns={campaigns} />
                   </aside>
                 </div>
               ) : (

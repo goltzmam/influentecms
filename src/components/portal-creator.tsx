@@ -135,7 +135,7 @@ export function PortalCreator({
                     ? "Manchete visual, notícias em lista e coluna lateral."
                     : t === "classic"
                       ? "Capa editorial com manchetes, vídeos e editorias no formato Influente."
-                      : "A mesma estrutura editorial com tipografia de revista e identidade configurável."}
+                      : "Reportagem de capa dividida, faixa de histórias e grades editoriais assimétricas."}
                 </p>
               </label>
             ))}
