@@ -22,7 +22,7 @@ export function EditorInviteLink({
             const form = new FormData();
             form.set("portal_id", portalId);
             form.set("email", email);
-            const result = url ? { url } : await editorAccessLink(form);
+            const result = await editorAccessLink(form);
             if (!result.url) {
               setMessage(result.error || "Não foi possível criar o convite.");
               return;
@@ -30,10 +30,10 @@ export function EditorInviteLink({
             setUrl(result.url);
             try {
               await navigator.clipboard.writeText(result.url);
-              setMessage("Convite copiado. Envie somente para este editor.");
+              setMessage("Convite copiado. Envie somente para este editor e use este novo link.");
             } catch {
               setMessage(
-                "Copie o link abaixo e envie somente para este editor.",
+                "Copie o link abaixo e envie somente para este editor. Use este novo convite.",
               );
             }
           })

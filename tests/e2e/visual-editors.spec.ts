@@ -131,6 +131,7 @@ test("Tema Diário, editor visual e acesso sem senha isolado por portal", async 
   await editor.goto(
     `/auth/callback?token_hash=${encodeURIComponent(link.data.properties.hashed_token)}&type=magiclink&next=/painel/${portalId}`,
   );
+  await editor.getByRole("button", {name:"Confirmar e entrar no portal"}).click();
   await expect(editor).toHaveURL(new RegExp(`/painel/${portalId}$`));
   await expect(editor.locator("#portal-select option")).toHaveCount(2);
   await expect(

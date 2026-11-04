@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { requirePortal } from "@/lib/portal";
+import { confirmationLink } from "@/lib/access-link";
 import { serviceClient } from "@/lib/supabase/service";
 export async function inviteEditor(form: FormData) {
   const auth = await requirePortal(String(form.get("portal_id")));
@@ -120,9 +121,16 @@ export async function editorAccessLink(
         email,
         options: { redirectTo },
       });
-    if (generated.error || !generated.data.properties?.action_link)
+    if (generated.error || !generated.data.properties?.hashed_token)
       return { error: "Não foi possível criar o convite. Tente novamente." };
-    return { url: generated.data.properties.action_link };
+    return {
+      url: confirmationLink(
+        process.env.APP_URL || "http://localhost:3000",
+        generated.data.properties.hashed_token,
+        generated.data.properties.verification_type,
+        `/painel/${auth.portal.id}`,
+      ),
+    };
   } catch {
     return { error: "Não foi possível criar o convite. Tente novamente." };
   }
