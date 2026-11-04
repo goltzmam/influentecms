@@ -1,5 +1,21 @@
 import { z } from "zod";
 import { blueprintSchema, blueprintShape, type AiBlueprint } from "./schema.ts";
+import { experienceSchema } from "../experience.ts";
+const designObject = experienceSchema.unwrap();
+const generatedShape = blueprintShape.extend({
+  design: designObject.extend({
+    navigation: designObject.shape.navigation
+      .unwrap()
+      .required({ layout: true }),
+    contact: designObject.shape.contact
+      .unwrap()
+      .required({ mode: true, maxWidth: true }),
+    footer: designObject.shape.footer.unwrap().required({ layout: true }),
+    partners: designObject.shape.partners.unwrap().required({ layout: true }),
+  }),
+});
+const parseGeneratedPlan = (value: unknown) =>
+  blueprintSchema.parse(generatedShape.parse(value));
 export const defaultModel = "gemini-3.6-flash";
 export class AiError extends Error {
   diagnostic?: { status: number; message: string };
@@ -247,7 +263,7 @@ export async function generateBlueprint(
   // Keep the provider schema structural; all constraints are enforced by Zod
   // after generation. Gemini supports a smaller JSON Schema subset.
   const schema = JSON.parse(
-    JSON.stringify(z.toJSONSchema(blueprintShape), (key, value) =>
+    JSON.stringify(z.toJSONSchema(generatedShape), (key, value) =>
       [
         "$schema",
         "default",
@@ -321,7 +337,7 @@ export async function generateBlueprint(
   }
   let plan: AiBlueprint;
   try {
-    plan = blueprintSchema.parse(JSON.parse(result!.text));
+    plan = parseGeneratedPlan(JSON.parse(result!.text));
   } catch (firstError) {
     if (!signal.aborted) {
       const issues =
@@ -348,7 +364,7 @@ export async function generateBlueprint(
       };
       try {
         const fixed = await call(usedModel, key, repair, fetcher, signal);
-        plan = blueprintSchema.parse(JSON.parse(fixed.text));
+        plan = parseGeneratedPlan(JSON.parse(fixed.text));
         return { plan, model: usedModel, references, warnings };
       } catch {}
     }

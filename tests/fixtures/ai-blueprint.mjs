@@ -2,6 +2,12 @@ export const blueprint = {
   name: "SaudeFIT",
   slug: "saudefit",
   template: "classic",
+  design: {
+    navigation: { layout: "hybrid" },
+    contact: { mode: "compact", maxWidth: 420 },
+    footer: { layout: "columns" },
+    partners: { layout: "cards" },
+  },
   rationale:
     "Portal editorial para movimento e bem-estar, com leitura clara e seções temáticas.",
   identity: {

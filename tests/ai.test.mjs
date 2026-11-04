@@ -446,3 +446,34 @@ test("FLUE corrige uma estrutura inválida e envia capturas como dados visuais",
   );
   assert.ok(captured.contents.at(-1).parts[0].text.includes("validação"));
 });
+
+test("FLUE exige composição visual completa e repara omissão de design", async () => {
+  let count = 0;
+  const missing = copy();
+  delete missing.design;
+  const result = await generateBlueprint(
+    {
+      brief: "Crie um portal SaudeFIT completo com imagens e design.",
+      references: [],
+    },
+    {
+      key: "test-key",
+      fetcher: async () => {
+        count++;
+        return Response.json({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { text: JSON.stringify(count === 1 ? missing : copy()) },
+                ],
+              },
+            },
+          ],
+        });
+      },
+    },
+  );
+  assert.equal(count, 2);
+  assert.equal(result.plan.design.contact.mode, "compact");
+});
