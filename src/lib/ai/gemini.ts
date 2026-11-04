@@ -158,8 +158,10 @@ export async function generateBlueprint(
       );
     }
   }
-  const schema = z.toJSONSchema(blueprintShape);
-  delete (schema as Record<string, unknown>).$schema;
+  // Keep the provider schema structural; all constraints are enforced by Zod
+  // after generation. Gemini supports a smaller JSON Schema subset.
+  const schema = JSON.parse(JSON.stringify(z.toJSONSchema(blueprintShape), (key,value) =>
+    ['$schema','additionalProperties','minLength','maxLength','pattern','minItems','maxItems'].includes(key) ? undefined : value));
   const result = await call(
     model,
     key,
