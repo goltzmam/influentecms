@@ -14,10 +14,14 @@ export async function POST(request: Request) {
         400,
         input.error.issues[0]?.message || "Confira a descrição e os links.",
       );
-    if (!process.env.GEMINI_API_KEY && !process.env.GEMINI_API && !process.env.GOOGLE_API_KEY)
+    if (
+      !process.env.GEMINI_API_KEY &&
+      !process.env.GEMINI_API &&
+      !process.env.GOOGLE_API_KEY
+    )
       throw new ApiFailure(
         503,
-        "Configure GEMINI_API_KEY na Vercel para ativar o criador de portais.",
+        "Ative a conexão da FLUE nas configurações do servidor para criar portais.",
       );
     const start = await auth.client.rpc("start_portal_ai_job", {
       p_organization: auth.organizationId,
@@ -58,10 +62,24 @@ export async function POST(request: Request) {
         "O resultado não pôde ser salvo. Tente abrir o projeto pelo histórico antes de gerar novamente.",
       );
     return Response.json(
-      { jobId, ...result },
+      {
+        jobId,
+        plan: result.plan,
+        references: result.references,
+        warnings: result.warnings,
+      },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
+    if (error instanceof AiError)
+      console.warn(
+        JSON.stringify({
+          event: "flue_generation_failed",
+          jobId,
+          code: error.code,
+          status: error.diagnostic?.status,
+        }),
+      );
     if (auth && jobId)
       await auth.client.rpc("finish_portal_ai_job", {
         p_job: jobId,
@@ -75,7 +93,7 @@ export async function POST(request: Request) {
       });
     if (error instanceof AiError)
       return Response.json(
-        { error: error.message },
+        { error: error.message, code: error.code },
         { status: error.code === "provider_quota" ? 429 : 502 },
       );
     return apiError(error);

@@ -94,6 +94,21 @@ test("Estúdio IA recupera plano, pré-visualiza e cria portal editável real", 
     p_failed: false,
   });
   if (finished.error) throw finished.error;
+  const failed = await owner.rpc("start_portal_ai_job", {
+    p_organization: organizationId,
+    p_brief: "Crie um portal que possa ser retomado depois de uma falha.",
+    p_references: [],
+  });
+  if (failed.error) throw failed.error;
+  const failedFinish = await owner.rpc("finish_portal_ai_job", {
+    p_job: failed.data,
+    p_plan: null,
+    p_model: null,
+    p_references: [],
+    p_warnings: ["provider_error"],
+    p_failed: true,
+  });
+  if (failedFinish.error) throw failedFinish.error;
   expect(
     (
       await request.post("/api/ai/portals/generate", {
@@ -108,6 +123,12 @@ test("Estúdio IA recupera plano, pré-visualiza e cria portal editável real", 
   await page.getByRole("button", { name: "Entrar no painel" }).click();
   await expect(page).toHaveURL(/\/painel$/);
   await page.getByRole("link", { name: "Criar com IA" }).click();
+  await expect(page.getByText("ESTÚDIO FLUE", { exact: true })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Gemini");
+  await page.getByRole("button", { name: "Retomar briefing" }).click();
+  await expect(page.getByLabel("O que vamos criar?")).toHaveValue(
+    "Crie um portal que possa ser retomado depois de uma falha.",
+  );
   await page.getByRole("button", { name: "Abrir projeto" }).click();
   await expect(page.getByLabel("Nome do portal")).toHaveValue("SaudeFIT");
   await page.getByLabel("Nome do portal").fill("SaudeFIT Editável");

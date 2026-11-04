@@ -1,6 +1,5 @@
 import { requireAdmin } from "@/lib/auth";
 import { AiPortalStudio } from "@/components/ai-portal-studio";
-import { defaultModel } from "@/lib/ai/gemini";
 export default async function AiStudioPage() {
   const { client, membership } = await requireAdmin();
   const { data, error } = await client
@@ -12,9 +11,10 @@ export default async function AiStudioPage() {
   return (
     <AiPortalStudio
       configured={Boolean(
-        process.env.GEMINI_API_KEY || process.env.GEMINI_API || process.env.GOOGLE_API_KEY,
+        process.env.GEMINI_API_KEY ||
+        process.env.GEMINI_API ||
+        process.env.GOOGLE_API_KEY,
       )}
-      model={process.env.GEMINI_MODEL || defaultModel}
       history={
         error
           ? []

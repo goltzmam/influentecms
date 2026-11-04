@@ -12,7 +12,7 @@ export async function GET(
     const { data, error } = await auth.client
       .from("portal_ai_jobs")
       .select(
-        "id,status,plan,model,reference_results,warnings,generated_portal_id",
+        "id,status,brief,reference_urls,plan,reference_results,warnings,generated_portal_id",
       )
       .eq("id", jobId)
       .eq("organization_id", auth.organizationId)

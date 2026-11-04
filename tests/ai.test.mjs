@@ -299,6 +299,13 @@ test("Criação IA é atômica, idempotente, isolada e respeita rascunhos e cota
       "Limite por organização conta também as gerações que falharam",
       async () => {
         for (let i = 0; i < 3; i++) {
+          const temporary = await start();
+          await db.query(
+            "select finish_portal_ai_job($1,null,null,$2,$3,true)",
+            [temporary, "[]", '["provider_error"]'],
+          );
+        }
+        for (let i = 0; i < 3; i++) {
           const id = await start();
           await db.query(
             "select finish_portal_ai_job($1,null,null,$2,$3,true)",
@@ -313,8 +320,63 @@ test("Criação IA é atômica, idempotente, isolada e respeita rascunhos e cota
   }
 });
 
-test('Gemini repete sobrecarga transitória antes de falhar',async()=>{
- let calls=0;
- const result=await generateBlueprint({brief:'Crie um portal editorial chamado SaudeFIT.',references:[]},{key:'test-key-not-a-secret',fetcher:async()=>{calls++;return calls===1?new Response('{}',{status:503}):Response.json({candidates:[{content:{parts:[{text:JSON.stringify(blueprint)}]}}]});}});
- assert.equal(calls,2);assert.equal(result.plan.name,'SaudeFIT');
+test("Gemini repete sobrecarga transitória antes de falhar", async () => {
+  let calls = 0;
+  const result = await generateBlueprint(
+    { brief: "Crie um portal editorial chamado SaudeFIT.", references: [] },
+    {
+      key: "test-key-not-a-secret",
+      fetcher: async () => {
+        calls++;
+        return calls === 1
+          ? new Response("{}", { status: 503 })
+          : Response.json({
+              candidates: [
+                { content: { parts: [{ text: JSON.stringify(blueprint) }] } },
+              ],
+            });
+      },
+    },
+  );
+  assert.equal(calls, 2);
+  assert.equal(result.plan.name, "SaudeFIT");
+});
+
+test("FLUE recupera indisponibilidade com modelo realmente listado pelo provedor", async () => {
+  const calls = [];
+  const result = await generateBlueprint(
+    { brief: "Crie um portal editorial chamado SaudeFIT.", references: [] },
+    {
+      key: "test-key-not-a-secret",
+      fetcher: async (url, init) => {
+        calls.push(String(url));
+        if (String(url).includes("/models?"))
+          return Response.json({
+            models: [
+              {
+                name: "models/gemini-test-flash",
+                supportedGenerationMethods: ["generateContent"],
+              },
+              {
+                name: "models/gemini-image-flash",
+                supportedGenerationMethods: ["generateContent"],
+              },
+            ],
+          });
+        if (String(url).includes("gemini-test-flash:"))
+          return Response.json({
+            candidates: [
+              { content: { parts: [{ text: JSON.stringify(blueprint) }] } },
+            ],
+          });
+        return Response.json(
+          { error: { message: "Temporary overload" } },
+          { status: 503 },
+        );
+      },
+    },
+  );
+  assert.equal(result.model, "gemini-test-flash");
+  assert.equal(result.plan.name, "SaudeFIT");
+  assert.equal(calls.length, 4);
 });

@@ -19,7 +19,7 @@ export default async function NewPortal({
           {notice}
         </p>
       )}
-      <div className="panel ai-new-banner"><strong>Prefere começar com uma ideia?</strong><p className="muted">Descreva seu portal e deixe o Gemini montar uma estrutura editável.</p><Link className="button button-outline" href="/painel/ia">Criar portal com IA →</Link></div>
+      <div className="panel ai-new-banner"><strong>Prefere começar com uma ideia?</strong><p className="muted">Descreva seu portal e deixe a FLUE montar uma estrutura editável.</p><Link className="button button-outline" href="/painel/ia">Criar portal com IA →</Link></div>
       <PortalCreator action={createPortal} />
     </>
   );

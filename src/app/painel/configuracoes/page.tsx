@@ -9,8 +9,6 @@ export default async function Settings() {
     "VERCEL_API_TOKEN",
     "VERCEL_PROJECT_ID",
     "SUPABASE_SERVICE_ROLE_KEY",
-    "GEMINI_API_KEY",
-    "GEMINI_API",
   ];
   return (
     <>
@@ -41,6 +39,18 @@ export default async function Settings() {
             </span>
           </div>
         ))}
+        <div className="record-line">
+          <strong>FLUE</strong>
+          <span
+            className={`badge ${process.env.GEMINI_API_KEY || process.env.GEMINI_API || process.env.GOOGLE_API_KEY ? "published" : "draft"}`}
+          >
+            {process.env.GEMINI_API_KEY ||
+            process.env.GEMINI_API ||
+            process.env.GOOGLE_API_KEY
+              ? "Conectada"
+              : "Pendente"}
+          </span>
+        </div>
       </section>
       <section className="panel">
         <h2>Configuração editorial</h2>

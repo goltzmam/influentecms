@@ -133,10 +133,12 @@ Habilite backups gerenciados/PITR conforme seu plano Supabase, com retenção, r
 
 Os feeds têm limites de protocolo: RSS inclui as 50 publicações mais recentes, news sitemap até 1.000 publicações das últimas 48 horas e sitemap até 50.000 registros. Para volumes maiores, implemente particionamento de sitemaps antes de atingir esses limites. Listagens privadas mostram até 200 resultados por busca; a busca pública tem paginação. Não há contadores fictícios de audiência ou serviço de analytics terceirizado embutido.
 
-### Estúdio de portais com Gemini
+### Estúdio FLUE
 
-No painel, abra **Criar com IA**. Descreva nome, público, tema, cores e seções; opcionalmente informe até três referências HTTPS públicas. O Gemini prepara identidade, categorias, homepage, páginas e textos editoriais originais. Revise a prévia, ajuste nome, endereço, template e paleta e clique em **Criar portal editável**. Tudo continua disponível nos editores existentes, inclusive TipTap, mídia, SEO e homepage arrastável.
+No painel, abra **Criar com IA**. Descreva nome, público, tema, cores e seções; opcionalmente informe até três referências HTTPS públicas. A FLUE prepara identidade, categorias, homepage, páginas e textos editoriais originais. Revise a prévia, ajuste nome, endereço, template e paleta e clique em **Criar portal editável**. Tudo continua disponível nos editores existentes, inclusive TipTap, mídia, SEO e homepage arrastável.
 
 Configure `GEMINI_API_KEY` como variável secreta na Vercel (Production) e faça um novo deploy. A chave permanece no servidor. O modelo padrão é `gemini-3.6-flash`; `GEMINI_MODEL` permite substituí-lo por um modelo compatível com JSON estruturado e URL Context. A geração usa a API paga/limitada da sua conta Google, com até cinco tentativas por organização por hora. Referências inacessíveis são sinalizadas; textos, marcas e imagens de terceiros não são copiados. Logo tipográfico, favicon e ilustrações são produzidos com a identidade escolhida; fotografias podem ser adicionadas pela biblioteca.
 
 A migração `202611030004_ai_portals.sql` instala histórico privado e criação transacional. Artigos começam em rascunho, salvo publicação expressamente selecionada na revisão; páginas legais permanecem rascunhos. Projetos prontos podem ser reabertos e falhas de criação não deixam estruturas parciais. Testes de provedor usam respostas controladas; geração real exige a chave e não é substituída por conteúdo simulado.
+
+A FLUE é a marca exibida no painel. O serviço tenta modelos de texto disponíveis na conta quando a geração principal fica indisponível, sem simular resultados. A migração `202611030005_flue_retries.sql` permite retomar falhas temporárias sem consumir a cota de portais. `scripts/check-flue-flow.mjs` valida o fluxo autenticado com geração real, referência, criação, mídia e portal público usando uma organização descartável, removida ao final; execute somente em contexto administrativo autorizado.

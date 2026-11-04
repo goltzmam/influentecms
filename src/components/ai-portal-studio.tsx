@@ -22,7 +22,6 @@ import { Button } from "./ui/button";
 type Result = {
   jobId: string;
   plan: AiBlueprint;
-  model: string;
   references: { url: string; status: string }[];
   warnings: string[];
 };
@@ -116,12 +115,10 @@ function Preview({
 }
 export function AiPortalStudio({
   configured,
-  model,
   history,
   migrationReady,
 }: {
   configured: boolean;
-  model: string;
   history: History[];
   migrationReady: boolean;
 }) {
@@ -180,7 +177,11 @@ export function AiPortalStudio({
         body: JSON.stringify({ brief, references }),
         signal: abort.current.signal,
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => {
+        throw new Error(
+          "A FLUE não recebeu uma resposta do servidor. Aguarde e tente novamente; seu briefing continua no formulário.",
+        );
+      });
       if (!response.ok)
         throw new Error(data.error || "Não foi possível gerar.");
       load(data);
@@ -197,10 +198,20 @@ export function AiPortalStudio({
       const response = await fetch(`/api/ai/portals/${id}`, {
         cache: "no-store",
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => {
+        throw new Error(
+          "A FLUE não recebeu uma resposta do servidor. Aguarde e tente novamente; seu briefing continua no formulário.",
+        );
+      });
       if (!response.ok) throw new Error(data.error);
       if (data.status === "created" && data.generated_portal_id) {
         router.push(`/painel/${data.generated_portal_id}`);
+        return;
+      }
+      if (data.status === "failed") {
+        setResult(null);
+        setBrief(data.brief || "");
+        setLinks((data.reference_urls || []).join("\n"));
         return;
       }
       if (data.status !== "ready")
@@ -212,7 +223,6 @@ export function AiPortalStudio({
       load({
         jobId: data.id,
         plan: data.plan,
-        model: data.model,
         references: data.reference_results,
         warnings: data.warnings,
       });
@@ -233,7 +243,11 @@ export function AiPortalStudio({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId: result.jobId, edits, publishArticles }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => {
+        throw new Error(
+          "A FLUE não recebeu uma resposta do servidor. Aguarde e tente novamente; seu briefing continua no formulário.",
+        );
+      });
       if (!response.ok)
         throw new Error(data.error || "Não foi possível criar.");
       const notice = data.warnings?.length
@@ -262,7 +276,7 @@ export function AiPortalStudio({
       <div className="page-heading">
         <div>
           <p className="eyebrow">
-            <Sparkles size={13} /> ESTÚDIO GEMINI
+            <Sparkles size={13} /> ESTÚDIO FLUE
           </p>
           <h1>Uma ideia. Um portal inteiro.</h1>
           <p className="muted">
@@ -272,14 +286,14 @@ export function AiPortalStudio({
         </div>
         <span className={`ai-provider ${configured ? "ready" : ""}`}>
           <span />
-          {configured ? "Gemini conectado" : "Gemini não ativado"}
+          {configured ? "FLUE conectada" : "FLUE não ativada"}
         </span>
       </div>
       {!configured && (
         <div className="notice" role="status">
-          Para ativar, configure <strong>GEMINI_API_KEY</strong> como segredo de
-          produção na Vercel e faça um novo deploy. A chave fica somente no
-          servidor. <Link href="/painel/configuracoes">Ver integrações →</Link>
+          Para ativar a FLUE, configure a conexão segura no servidor e faça um
+          novo deploy.{" "}
+          <Link href="/painel/configuracoes">Ver integrações →</Link>
         </div>
       )}
       {!migrationReady && (
@@ -330,7 +344,7 @@ export function AiPortalStudio({
               disabled={busy}
             />
             <p className="field-hint">
-              O Gemini usa referências para interpretar composição e estilo.
+              A FLUE usa referências para interpretar composição e estilo.
               Textos, marcas e imagens de outros portais não são importados.
             </p>
             <div className="form-actions">
@@ -362,8 +376,8 @@ export function AiPortalStudio({
             </div>
             {busy && (
               <p role="status" className="field-hint">
-                O Gemini está analisando o briefing e montando a estrutura. Isso
-                pode levar até dois minutos.
+                A FLUE está analisando o briefing e montando a estrutura. Isso
+                pode levar até quatro minutos.
               </p>
             )}
           </form>
@@ -643,7 +657,7 @@ export function AiPortalStudio({
                       </a>
                       <small>
                         {ref.status === "retrieved"
-                          ? "Consulta confirmada pelo Gemini"
+                          ? "Consulta confirmada pela FLUE"
                           : "Consulta não confirmada"}
                       </small>
                     </div>
@@ -679,14 +693,16 @@ export function AiPortalStudio({
                   Abrir portal →
                 </Link>
               ) : (
-                ["ready", "generating"].includes(job.status) && (
+                ["ready", "generating", "failed"].includes(job.status) && (
                   <button
                     className="button-outline"
                     type="button"
                     onClick={() => restore(job.id)}
                     disabled={busy || creating}
                   >
-                    Abrir projeto
+                    {job.status === "failed"
+                      ? "Retomar briefing"
+                      : "Abrir projeto"}
                   </button>
                 )
               )}
