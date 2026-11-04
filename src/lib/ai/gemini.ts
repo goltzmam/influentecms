@@ -51,7 +51,7 @@ async function call(
     if ([401, 403].includes(response.status))
       throw new AiError(
         "provider_auth",
-        "A conexão da FLUE precisa ser revisada nas configurações do servidor.",
+        "A FLUE está temporariamente indisponível. Tente novamente em instantes.",
       );
     if (response.status === 429)
       throw new AiError(
@@ -151,13 +151,13 @@ export async function generateBlueprint(
   if (!key)
     throw new AiError(
       "not_configured",
-      "Ative a conexão da FLUE nas configurações do servidor para criar portais.",
+      "A FLUE está temporariamente indisponível. Tente novamente em instantes.",
     );
   const model = options.model || process.env.GEMINI_MODEL || defaultModel;
   if (!/^gemini-[a-z0-9.-]+$/.test(model))
     throw new AiError(
       "provider_model",
-      "A configuração da FLUE precisa ser revisada no servidor.",
+      "A FLUE está recebendo uma atualização. Tente novamente em instantes.",
     );
   const signal = options.signal
     ? AbortSignal.any([options.signal, AbortSignal.timeout(240000)])

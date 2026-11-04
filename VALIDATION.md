@@ -33,3 +33,11 @@ O proprietário deve criar sua conta administrativa pelo processo seguro do READ
 - Banco com todas as migrations: criação atômica, slugs conflitantes sem resíduos, idempotência, isolamento de organizações, visitante sem acesso, rascunhos por padrão e limite de cinco gerações/hora.
 - Build Next.js inclui páginas e rotas privadas de IA. Teste de navegador usa projeto explicitamente identificado como fixture, autenticando e persistindo dados/mídia no Supabase local.
 - Geração real com Google depende de `GEMINI_API_KEY`; sem chave não há simulação nem chamada de geração confirmada.
+
+## Tema Diário, editor visual e acesso de editores
+
+- 27 testes de integração: permissões por portal, confirmação por e-mail autenticado, mídia isolada, revogação e rascunho de design privado, além dos testes existentes.
+- Navegador: convite e cópia de acesso, entrada sem senha, bloqueio de outro portal, arraste de texto e imagem, vídeo, banner em retângulo, publicação do tema Diário e remoção do acesso. Os fluxos anteriores dos templates e da FLUE continuam validados.
+- Termos de infraestrutura e variáveis removidos das telas, avisos e configuração da conta.
+- O cadastro de domínio permanece pendente até a verificação real. A nova credencial necessária à conexão automática foi bloqueada pela revisão de autorização; nenhum domínio foi indevidamente ativado.
+- Serviço local de captura de e-mails habilitado para testar convites sem enviar mensagens externas. Na produção, envio automático depende do serviço de e-mail; há convite copiável de uso único como alternativa.

@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { referenceSections } from "@/lib/presentation";
+import { useState, type DragEvent } from "react";
+import { referenceSections, presentationSettings } from "@/lib/presentation";
 import {
   DndContext,
   closestCenter,
@@ -15,10 +15,11 @@ import {
   arrayMove,
   useSortable,
   verticalListSortingStrategy,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { saveHomepage } from "@/app/painel/actions";
+import { saveHomepage, uploadMedia } from "@/app/painel/actions";
 import type {
   Section,
   Category,
@@ -49,6 +50,7 @@ function Block({
     useSortable({ id: section.id });
   return (
     <section
+      id={`block-${section.id}`}
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className="builder-block"
@@ -74,6 +76,7 @@ function Block({
               banner: "Publicidade",
               text: "Texto editorial",
               image: "Imagem com link",
+              video: "Vídeo",
             }[section.type]
           }
         </strong>
@@ -88,6 +91,94 @@ function Block({
           onChange={(e) => update({ ...section, title: e.target.value })}
         />
       </label>
+      <div className="form-columns">
+        <label>
+          Largura
+          <select
+            value={section.layoutWidth || "full"}
+            onChange={(e) =>
+              update({
+                ...section,
+                layoutWidth: e.target.value as Section["layoutWidth"],
+              })
+            }
+          >
+            <option value="full">Página inteira</option>
+            <option value="half">Metade</option>
+            <option value="third">Um terço</option>
+          </select>
+        </label>
+        <label>
+          Espaçamento
+          <input
+            type="range"
+            min="0"
+            max="80"
+            value={section.padding || 0}
+            onChange={(e) =>
+              update({ ...section, padding: Number(e.target.value) })
+            }
+          />
+        </label>
+      </div>
+      <div className="form-columns">
+        <label>
+          Fundo da seção
+          <input
+            type="color"
+            value={section.backgroundColor || "#ffffff"}
+            onChange={(e) =>
+              update({ ...section, backgroundColor: e.target.value })
+            }
+          />
+        </label>
+        <label>
+          Cor da tipografia
+          <input
+            type="color"
+            value={section.textColor || "#21152e"}
+            onChange={(e) => update({ ...section, textColor: e.target.value })}
+          />
+        </label>
+      </div>
+      {section.type === "video" && (
+        <label>
+          Link do vídeo
+          <input
+            type="url"
+            value={section.videoUrl || ""}
+            placeholder="YouTube ou arquivo MP4"
+            onChange={(e) => update({ ...section, videoUrl: e.target.value })}
+          />
+        </label>
+      )}
+      {section.type === "banner" && (
+        <label>
+          Formato do anúncio
+          <select
+            value={section.adFormat || "billboard"}
+            onChange={(e) =>
+              update({
+                ...section,
+                adFormat: e.target.value as Section["adFormat"],
+              })
+            }
+          >
+            {[
+              ["billboard", "Painel amplo · 970 × 250"],
+              ["leaderboard", "Faixa · 728 × 90"],
+              ["rectangle", "Retângulo · 300 × 250"],
+              ["skyscraper", "Vertical · 300 × 600"],
+              ["square", "Quadrado · 300 × 300"],
+              ["native", "Conteúdo patrocinado"],
+            ].map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {section.type === "category" && (
         <label>
           Categoria
@@ -140,7 +231,7 @@ function Block({
           onChange={(e) => update({ ...section, text: e.target.value })}
         />
       )}
-      {["image", "sponsored"].includes(section.type) && (
+      {["image", "sponsored", "banner"].includes(section.type) && (
         <>
           <MediaInput
             portalId={portalId}
@@ -246,6 +337,57 @@ function Block({
     </section>
   );
 }
+function CanvasSection({
+  section,
+  children,
+  onDrop,
+  onEdit,
+}: {
+  section: Section;
+  children: React.ReactNode;
+  onDrop: (event: DragEvent, id?: string) => void;
+  onEdit: () => void;
+}) {
+  const { setNodeRef, attributes, listeners, transform, transition } =
+    useSortable({ id: `canvas-${section.id}` });
+  return (
+    <div
+      ref={setNodeRef}
+      className="canvas-section"
+      data-section-id={section.id}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        gridColumn: `span ${section.layoutWidth === "half" ? 6 : section.layoutWidth === "third" ? 4 : 12}`,
+      }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => onDrop(e, section.id)}
+    >
+      <div className="canvas-section-tools">
+        <button
+          type="button"
+          className="drag-handle"
+          aria-label="Mover bloco na página"
+          {...attributes}
+          {...listeners}
+        >
+          ⠿ Mover
+        </button>
+        <button type="button" className="button-ghost" onClick={onEdit}>
+          Editar seção
+        </button>
+      </div>
+      <div
+        onClick={(event) => {
+          if ((event.target as HTMLElement).closest("a"))
+            event.preventDefault();
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 export function HomeBuilder({
   portalId,
   portal,
@@ -254,6 +396,8 @@ export function HomeBuilder({
   articles,
   campaigns,
   partners,
+  media = [],
+  draftDesign,
 }: {
   portalId: string;
   portal: Portal;
@@ -262,9 +406,93 @@ export function HomeBuilder({
   articles: Article[];
   campaigns: Campaign[];
   partners: Partner[];
+  media?: { id: string; name: string; url: string }[];
+  draftDesign?: {
+    settings?: Portal["settings"];
+    template?: Portal["template"];
+  };
 }) {
+  const baseDesign = presentationSettings(
+    { ...portal.settings, ...draftDesign?.settings },
+    draftDesign?.template || portal.template,
+  );
+  const [design, setDesign] = useState({
+    color: baseDesign.color!,
+    accentColor: baseDesign.accentColor!,
+    surfaceColor: baseDesign.surfaceColor!,
+    textColor: baseDesign.textColor!,
+    font: baseDesign.font || "sans",
+  });
+  const [template, setTemplate] = useState<Portal["template"]>(
+    draftDesign?.template || portal.template,
+  );
+  const [dropError, setDropError] = useState(""),
+    [uploading, setUploading] = useState(false),
+    [device, setDevice] = useState("desktop");
+  const previewPortal = {
+    ...portal,
+    template,
+    settings: { ...portal.settings, ...design },
+  };
+  function add(
+    type: Section["type"],
+    before?: string,
+    extra: Partial<Section> = {},
+  ) {
+    if (sections.length >= 30) {
+      setDropError("Use até 30 seções por página.");
+      return;
+    }
+    const section = { id: crypto.randomUUID(), type, title: "", ...extra };
+    setSections((items) => {
+      const index = before ? items.findIndex((s) => s.id === before) : -1;
+      return index < 0
+        ? [...items, section]
+        : [...items.slice(0, index), section, ...items.slice(index)];
+    });
+  }
+  async function drop(event: DragEvent, before?: string) {
+    event.preventDefault();
+    event.stopPropagation();
+    setDropError("");
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      setUploading(true);
+      const form = new FormData();
+      form.set("portal_id", portalId);
+      form.set("file", file);
+      try {
+        const result = await uploadMedia(form);
+        if (result.url) add("image", before, { image: result.url });
+        else setDropError(result.error || "Não foi possível enviar a imagem.");
+      } finally {
+        setUploading(false);
+      }
+      return;
+    }
+    const image = event.dataTransfer.getData("application/x-influente-image");
+    if (image) {
+      add("image", before, { image });
+      return;
+    }
+    const type = event.dataTransfer.getData("application/x-influente-block");
+    if (
+      [
+        "lead",
+        "latest",
+        "featured",
+        "category",
+        "sponsored",
+        "banner",
+        "text",
+        "image",
+        "video",
+      ].includes(type)
+    )
+      add(type as Section["type"], before);
+  }
   const [sections, setSections] = useState(
-    initial.length ? initial : referenceSections(categories),
+    initial.length ? initial : referenceSections(categories,portal.template),
   );
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -277,80 +505,152 @@ export function HomeBuilder({
       setSections((items) =>
         arrayMove(
           items,
-          items.findIndex((i) => i.id === active.id),
-          items.findIndex((i) => i.id === over.id),
+          items.findIndex(
+            (i) => i.id === String(active.id).replace(/^canvas-/, ""),
+          ),
+          items.findIndex(
+            (i) => i.id === String(over.id).replace(/^canvas-/, ""),
+          ),
         ),
       );
   }
   return (
-    <div className="homepage-editor">
-      <div className="builder-toolbar">
-        {(
-          [
-            "lead",
-            "latest",
-            "featured",
-            "category",
-            "sponsored",
-            "banner",
-            "text",
-            "image",
-          ] as const
-        ).map((type) => (
-          <button
-            className="button-outline"
-            type="button"
-            key={type}
-            onClick={() =>
-              setSections([
-                ...sections,
-                { id: crypto.randomUUID(), type, title: "" },
-              ])
-            }
-          >
-            +{" "}
-            {
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={move}
+    >
+      <div className="homepage-editor">
+        <section className="panel visual-design-bar">
+          <h2>Seu portal, do seu jeito</h2>
+          <p>
+            Arraste blocos ou imagens para a página. Use Mover para organizar e
+            Editar seção para configurar.
+          </p>
+          <div className="form-columns">
+            <label>
+              Tema
+              <select
+                aria-label="Tema do editor visual"
+                value={template}
+                onChange={(e) =>
+                  setTemplate(e.target.value as Portal["template"])
+                }
+              >
+                <option value="classic">Influente News</option>
+                <option value="modern">Revista Influente</option>
+                <option value="daily">Jornal Diário</option>
+              </select>
+            </label>
+            <label>
+              Visualização
+              <select
+                aria-label="Tamanho da prévia"
+                value={device}
+                onChange={(e) => setDevice(e.target.value)}
+              >
+                <option value="desktop">Computador</option>
+                <option value="mobile">Celular</option>
+              </select>
+            </label>
+          </div>
+          <div className="visual-colors">
+            {(
+              [
+                ["color", "Cor principal"],
+                ["accentColor", "Destaques"],
+                ["surfaceColor", "Fundo do portal"],
+                ["textColor", "Texto do portal"],
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <input
+                  type="color"
+                  value={design[key]}
+                  onChange={(e) =>
+                    setDesign({ ...design, [key]: e.target.value })
+                  }
+                />
+              </label>
+            ))}
+          </div>
+        </section>
+        {dropError && (
+          <p role="alert" className="notice">
+            {dropError}
+          </p>
+        )}
+        {uploading && <p role="status">Enviando imagem…</p>}
+        <div className="builder-toolbar">
+          {(
+            [
+              "lead",
+              "latest",
+              "featured",
+              "category",
+              "sponsored",
+              "banner",
+              "text",
+              "image",
+              "video",
+            ] as const
+          ).map((type) => (
+            <button
+              className="button-outline"
+              type="button"
+              key={type}
+              draggable
+              onDragStart={(event) =>
+                event.dataTransfer.setData(
+                  "application/x-influente-block",
+                  type,
+                )
+              }
+              onClick={() => add(type)}
+            >
+              +{" "}
               {
-                lead: "Capa de referência",
-                sponsored: "Publieditorial",
-                latest: "Recentes",
-                featured: "Destaques",
-                category: "Categoria",
-                banner: "Banner",
-                text: "Texto",
-                image: "Imagem",
-              }[type]
-            }
-          </button>
-        ))}
-        <button
-          type="button"
-          className="button-outline"
-          onClick={() => {
-            if (
-              confirm(
-                "Substituir a composição no editor pela estrutura do PDF? A versão pública só muda ao clicar Publicar homepage.",
+                {
+                  lead: "Capa de referência",
+                  sponsored: "Publieditorial",
+                  latest: "Recentes",
+                  featured: "Destaques",
+                  category: "Categoria",
+                  banner: "Banner",
+                  text: "Texto",
+                  image: "Imagem",
+                  video: "Vídeo",
+                }[type]
+              }
+            </button>
+          ))}
+          <button
+            type="button"
+            className="button-outline"
+            onClick={() => {
+              if (
+                confirm(
+                  "Substituir a composição no editor pela composição editorial? A versão pública só muda ao clicar Publicar homepage.",
+                )
               )
-            )
-              setSections(referenceSections(categories));
-          }}
-        >
-          Usar estrutura do PDF
-        </button>
-      </div>
-      <div className="editor-grid">
-        <form action={saveHomepage}>
-          <input type="hidden" name="portal_id" value={portalId} />
-          <input
-            type="hidden"
-            name="sections"
-            value={JSON.stringify(sections)}
-          />
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={move}
+                setSections(referenceSections(categories,template));
+            }}
           >
+            Usar composição editorial
+          </button>
+        </div>
+        <div className="editor-grid">
+          <form action={saveHomepage}>
+            <input type="hidden" name="portal_id" value={portalId} />
+            <input type="hidden" name="design" value={JSON.stringify(design)} />
+            <input type="hidden" name="template" value={template} />
+            <input
+              type="hidden"
+              name="sections"
+              value={JSON.stringify(sections)}
+            />
+
             <SortableContext
               items={sections.map((s) => s.id)}
               strategy={verticalListSortingStrategy}
@@ -373,55 +673,108 @@ export function HomeBuilder({
                 />
               ))}
             </SortableContext>
-          </DndContext>
-          {!sections.length && (
-            <div className="empty-state">
-              <h3>Uma homepage com a sua cara</h3>
-              <p>Adicione seções acima e arraste para organizar.</p>
+
+            {!sections.length && (
+              <div className="empty-state">
+                <h3>Uma homepage com a sua cara</h3>
+                <p>Adicione seções acima e arraste para organizar.</p>
+              </div>
+            )}
+            <div className="form-actions">
+              <SubmitButton>Salvar rascunho</SubmitButton>
+              <button type="submit" name="intent" value="publish">
+                Publicar homepage
+              </button>
+              <a
+                className="text-link"
+                href={`/painel/${portalId}/preview`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Prévia do rascunho salvo ↗
+              </a>
             </div>
-          )}
-          <div className="form-actions">
-            <SubmitButton>Salvar rascunho</SubmitButton>
-            <button type="submit" name="intent" value="publish">
-              Publicar homepage
-            </button>
-            <a
-              className="text-link"
-              href={`/painel/${portalId}/preview`}
-              target="_blank"
-              rel="noreferrer"
+          </form>
+          <aside className="panel builder-preview">
+            <p className="eyebrow">PRÉVIA EM TEMPO REAL</p>
+            {media.length > 0 && (
+              <details>
+                <summary>Arrastar da biblioteca</summary>
+                <div className="visual-media-library">
+                  {media.map((image) => (
+                    <img
+                      key={image.id}
+                      src={image.url}
+                      alt={image.name}
+                      draggable
+                      onDragStart={(event) =>
+                        event.dataTransfer.setData(
+                          "application/x-influente-image",
+                          image.url,
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              </details>
+            )}
+            <div
+              className={`live-preview-stage visual-canvas ${device}`}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => void drop(event)}
             >
-              Prévia do rascunho salvo ↗
-            </a>
-          </div>
-        </form>
-        <aside className="panel builder-preview">
-          <p className="eyebrow">PRÉVIA EM TEMPO REAL</p>
-          <div className="live-preview-stage">
-            <NewsShell
-              portal={portal}
-              categories={categories}
-              campaigns={campaigns}
-              partners={partners}
-              basePath={`/p/${portal.slug}`}
-              preview
-            >
-              <Homepage
-                portal={portal}
-                articles={articles}
+              <NewsShell
+                portal={previewPortal}
                 categories={categories}
                 campaigns={campaigns}
+                partners={partners}
                 basePath={`/p/${portal.slug}`}
-                sections={sections}
-              />
-            </NewsShell>
-          </div>
-          <small>
-            As alterações aparecem aqui antes de salvar. A prévia privada inclui
-            rascunhos. Abra a versão salva para visualizar em tamanho real.
-          </small>
-        </aside>
+                preview
+              >
+                <div className="canvas-grid">
+                  <SortableContext
+                    items={sections.map((s) => `canvas-${s.id}`)}
+                    strategy={rectSortingStrategy}
+                  >
+                    {sections.map((section) => (
+                      <CanvasSection
+                        key={section.id}
+                        section={section}
+                        onDrop={(event, id) => void drop(event, id)}
+                        onEdit={() =>
+                          document
+                            .getElementById(`block-${section.id}`)
+                            ?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            })
+                        }
+                      >
+                        <Homepage
+                          portal={previewPortal}
+                          articles={articles}
+                          categories={categories}
+                          campaigns={campaigns}
+                          basePath={`/p/${portal.slug}`}
+                          sections={[{ ...section, layoutWidth: "full" }]}
+                        />
+                      </CanvasSection>
+                    ))}
+                  </SortableContext>
+                </div>
+                <div className="canvas-drop-end">
+                  Solte uma imagem ou um bloco aqui
+                </div>
+              </NewsShell>
+            </div>
+            <small>
+              As alterações aparecem aqui antes de salvar. A prévia privada
+              inclui rascunhos. Abra a versão salva para visualizar em tamanho
+              real.
+            </small>
+          </aside>
+        </div>
       </div>
-    </div>
+    </DndContext>
   );
 }

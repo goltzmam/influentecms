@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { Globe2, Plus, ArrowUpRight } from "lucide-react";
-import { requireAdmin } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 export default async function Dashboard() {
-  const { client, membership } = await requireAdmin();
+  const { client, membership, isOwner, portalIds } = await requireAccess();
+  if (!isOwner) {
+    const { redirect } = await import("next/navigation");
+    redirect(`/painel/${portalIds[0]}`);
+  }
   const [{ data: portals, error }, { count, error: countError }] =
     await Promise.all([
       client
@@ -18,7 +22,7 @@ export default async function Dashboard() {
     ]);
   if (error || countError)
     throw new Error(
-      "Não foi possível carregar o dashboard. Aplique as migrations.",
+      "Não foi possível carregar o dashboard. Tente novamente em instantes.",
     );
   return (
     <>

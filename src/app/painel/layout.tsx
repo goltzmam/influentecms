@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
 import { AdminNav } from "@/components/admin-nav";
 export const dynamic = "force-dynamic";
 export default async function AdminLayout({
@@ -7,12 +7,16 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { client, user, membership } = await requireAdmin();
-  const { data, error } = await client
+  const { client, user, membership, isOwner, portalIds } =
+    await requireAccess();
+  let portalsQuery = client
     .from("portals")
     .select("id,name,slug")
-    .eq("organization_id", membership.organization_id)
     .order("name");
+  portalsQuery = isOwner
+    ? portalsQuery.eq("organization_id", membership.organization_id)
+    : portalsQuery.in("id", portalIds);
+  const { data, error } = await portalsQuery;
   if (error) throw new Error("Não foi possível carregar os portais.");
   return (
     <div className="dashboard">
@@ -20,7 +24,7 @@ export default async function AdminLayout({
         <Link className="brand" href="/painel">
           influente<span>●</span>
         </Link>
-        <AdminNav portals={data || []} />
+        <AdminNav portals={data || []} isOwner={isOwner} />
         <div className="sidebar-footer">
           <span className="status-dot" />
           Workspace privado

@@ -99,14 +99,17 @@ export function NewsShell({
   const s = presentationSettings(portal.settings, portal.template);
   const palette = (value: string | undefined, fallback: string) =>
     /^#[0-9a-f]{6}$/i.test(value || "") ? value : fallback;
-  const links = s.menusMode==="custom"?(s.menus||[]):[
-    { label: "Início", url: basePath || "/" },
-    ...categories.map((c) => ({
-      label: c.name,
-      url: `${basePath}/categoria/${c.slug}`,
-    })),
-    ...(s.menus || []),
-  ];
+  const links =
+    s.menusMode === "custom"
+      ? s.menus || []
+      : [
+          { label: "Início", url: basePath || "/" },
+          ...categories.map((c) => ({
+            label: c.name,
+            url: `${basePath}/categoria/${c.slug}`,
+          })),
+          ...(s.menus || []),
+        ];
   return (
     <div
       className={`news-site reference-site ${portal.template}`}
@@ -473,6 +476,38 @@ function Lead({
   campaigns: Campaign[];
   basePath: string;
 }) {
+  if (portal.template === "daily")
+    return (
+      <div className="daily-cover">
+        <div className="daily-hero">
+          {articles[0] && (
+            <a href={`${basePath}/noticia/${articles[0].slug}`}>
+              {articles[0].cover_url && (
+                <NewsImage
+                  src={articles[0].cover_url}
+                  alt={articles[0].cover_alt}
+                />
+              )}
+              <div>
+                <CategoryLabel article={articles[0]} categories={categories} />
+                <h2>{articles[0].title}</h2>
+                <p>{articles[0].subtitle}</p>
+              </div>
+            </a>
+          )}
+        </div>
+        <div className="daily-highlights">
+          {articles.slice(1, 4).map((article) => (
+            <ArticleCard
+              key={article.id}
+              article={article}
+              categories={categories}
+              basePath={basePath}
+            />
+          ))}
+        </div>
+      </div>
+    );
   const hasRail =
     !!youtubeEmbed(portal.settings.videoUrl || "") ||
     campaigns.some((c) => c.position === "sidebar");
@@ -655,126 +690,215 @@ export function Homepage({
   sections?: Section[];
 }) {
   const saved = sections ?? portal.home_published;
-  const blocks = saved.length ? saved : referenceSections(categories);
+  const blocks = saved.length ? saved : referenceSections(categories,portal.template);
   return (
     <div className="reference-home">
       <h1 className="sr-only">{portal.name} — últimas notícias</h1>
-      {!articles.length && !blocks.some(s=>s.type==="text"||s.type==="image") && (
-        <div className="public-empty">
-          <h2>Em breve, novas histórias por aqui.</h2>
-          <p>Acompanhe as próximas publicações.</p>
-        </div>
-      )}
+      {!articles.length &&
+        !blocks.some((s) => s.type === "text" || s.type === "image") && (
+          <div className="public-empty">
+            <h2>Em breve, novas histórias por aqui.</h2>
+            <p>Acompanhe as próximas publicações.</p>
+          </div>
+        )}
       {blocks.map((s) => {
-        const picks = s.articleIds?.length
-          ? s.articleIds
-              .map((id) => articles.find((a) => a.id === id))
-              .filter((a): a is Article => !!a)
-          : articles;
-        if (s.type === "lead")
-          return (
-            <section key={s.id} className="homepage-section">
-              {s.title && <h2 className="block-title">{s.title}</h2>}
-              <Lead
-                portal={portal}
-                articles={picks}
+        const render = () => {
+          const picks = s.articleIds?.length
+            ? s.articleIds
+                .map((id) => articles.find((a) => a.id === id))
+                .filter((a): a is Article => !!a)
+            : articles;
+          if (s.type === "lead")
+            return (
+              <section key={s.id} className="homepage-section">
+                {s.title && <h2 className="block-title">{s.title}</h2>}
+                <Lead
+                  portal={portal}
+                  articles={picks}
+                  categories={categories}
+                  campaigns={campaigns}
+                  basePath={basePath}
+                />
+              </section>
+            );
+          if (s.type === "category")
+            return (
+              <CategorySection
+                key={s.id}
+                section={s}
+                articles={articles}
                 categories={categories}
                 campaigns={campaigns}
                 basePath={basePath}
               />
-            </section>
-          );
-        if (s.type === "category")
-          return (
-            <CategorySection
-              key={s.id}
-              section={s}
-              articles={articles}
-              categories={categories}
-              campaigns={campaigns}
-              basePath={basePath}
-            />
-          );
-        if (s.type === "sponsored") {
-          const article = s.articleIds?.length ? picks[0] : undefined;
-          if (!article && !s.image && !s.text) return null;
-          return (
-            <section className="sponsored-strip" key={s.id}>
-              {(s.image || article?.cover_url) && (
-                <a
-                  href={
-                    article
-                      ? `${basePath}/noticia/${article.slug}`
-                      : siteLink(s.link || "", basePath)
-                  }
-                >
-                  <NewsImage
-                    src={s.image || article?.cover_url || ""}
-                    alt={article?.cover_alt || s.title}
-                  />
-                </a>
-              )}
-              <div>
-                <span className="news-kicker">
-                  {s.title || "Publieditorial"}
-                </span>
-                {article ? (
-                  <>
-                    <Link href={`${basePath}/noticia/${article.slug}`}>
-                      <h2>{article.title}</h2>
-                    </Link>
-                    <p>{article.subtitle}</p>
-                  </>
-                ) : (
-                  <p>{s.text}</p>
+            );
+          if (s.type === "sponsored") {
+            const article = s.articleIds?.length ? picks[0] : undefined;
+            if (!article && !s.image && !s.text) return null;
+            return (
+              <section className="sponsored-strip" key={s.id}>
+                {(s.image || article?.cover_url) && (
+                  <a
+                    href={
+                      article
+                        ? `${basePath}/noticia/${article.slug}`
+                        : siteLink(s.link || "", basePath)
+                    }
+                  >
+                    <NewsImage
+                      src={s.image || article?.cover_url || ""}
+                      alt={article?.cover_alt || s.title}
+                    />
+                  </a>
                 )}
-              </div>
-              <Campaigns campaigns={campaigns} position="sponsored" />
-            </section>
-          );
-        }
-        if (s.type === "banner")
+                <div>
+                  <span className="news-kicker">
+                    {s.title || "Publieditorial"}
+                  </span>
+                  {article ? (
+                    <>
+                      <Link href={`${basePath}/noticia/${article.slug}`}>
+                        <h2>{article.title}</h2>
+                      </Link>
+                      <p>{article.subtitle}</p>
+                    </>
+                  ) : (
+                    <p>{s.text}</p>
+                  )}
+                </div>
+                <Campaigns campaigns={campaigns} position="sponsored" />
+              </section>
+            );
+          }
+          if (s.type === "video")
+            return (
+              <section className="homepage-section block-video">
+                {s.title && <h2>{s.title}</h2>}
+                {youtubeEmbed(s.videoUrl || "") ? (
+                  <iframe
+                    title={s.title || "Vídeo do portal"}
+                    src={youtubeEmbed(s.videoUrl || "")}
+                    allowFullScreen
+                    loading="lazy"
+                    allow="encrypted-media; picture-in-picture"
+                  />
+                ) : s.videoUrl && /\.(mp4|webm)(?:\?|$)/i.test(s.videoUrl) ? (
+                  <video
+                    controls
+                    preload="metadata"
+                    src={safeLink(s.videoUrl)}
+                  />
+                ) : null}
+              </section>
+            );
+          if (s.type === "banner")
+            return (
+              <section className="homepage-section" key={s.id}>
+                {s.title && <h2 className="block-title">{s.title}</h2>}
+                <div
+                  className={`ad-format ad-format-${s.adFormat || "billboard"}`}
+                >
+                  {s.image ? (
+                    <aside className="public-ad">
+                      <span>Publicidade</span>
+                      <a
+                        href={safeLink(s.link || "")}
+                        target="_blank"
+                        rel="sponsored noopener noreferrer"
+                      >
+                        <img
+                          src={safeLink(s.image)}
+                          alt={s.title || "Publicidade"}
+                        />
+                      </a>
+                    </aside>
+                  ) : (
+                    <Campaigns
+                      campaigns={
+                        s.campaignId
+                          ? campaigns.filter((c) => c.id === s.campaignId)
+                          : campaigns
+                      }
+                      position={
+                        s.campaignId
+                          ? campaigns.find((c) => c.id === s.campaignId)
+                              ?.position ||
+                            s.position ||
+                            "header"
+                          : s.position || "header"
+                      }
+                    />
+                  )}
+                </div>
+              </section>
+            );
           return (
-            <section className="homepage-section" key={s.id}>
-              {s.title && <h2 className="block-title">{s.title}</h2>}
-              <Campaigns
-                campaigns={campaigns}
-                position={s.position || "header"}
-              />
+            <section key={s.id} className={`homepage-section block-${s.type}`}>
+              {s.title && (
+                <div className="editoria-heading">
+                  <h2>{s.title}</h2>
+                  <Sponsor section={s} />
+                </div>
+              )}
+              {s.type === "text" ? (
+                <div className="editorial-text">{s.text}</div>
+              ) : s.type === "image" ? (
+                s.image && (
+                  <a href={siteLink(s.link || "", basePath)}>
+                    <NewsImage src={s.image} alt={s.title} />
+                  </a>
+                )
+              ) : s.type === "featured" ? (
+                <Lead
+                  portal={portal}
+                  articles={picks}
+                  categories={categories}
+                  campaigns={campaigns}
+                  basePath={basePath}
+                />
+              ) : portal.template === "daily" ? (
+                <div className="daily-feed">
+                  <NewsGrid
+                    articles={picks.slice(0, 30)}
+                    categories={categories}
+                    basePath={basePath}
+                  />
+                  <aside className="daily-feed-sidebar">
+                    <h3>Mais lidas</h3>
+                    {picks.slice(0, 5).map((article) => (
+                      <ArticleCard
+                        key={article.id}
+                        article={article}
+                        categories={categories}
+                        basePath={basePath}
+                        variant="compact"
+                      />
+                    ))}
+                    <Campaigns campaigns={campaigns} position="sidebar" />
+                  </aside>
+                </div>
+              ) : (
+                <NewsGrid
+                  articles={picks.slice(0, 9)}
+                  categories={categories}
+                  basePath={basePath}
+                />
+              )}
             </section>
           );
+        };
         return (
-          <section key={s.id} className={`homepage-section block-${s.type}`}>
-            {s.title && (
-              <div className="editoria-heading">
-                <h2>{s.title}</h2>
-                <Sponsor section={s} />
-              </div>
-            )}
-            {s.type === "text" ? (
-              <div className="editorial-text">{s.text}</div>
-            ) : s.type === "image" ? (
-              s.image && (
-                <a href={siteLink(s.link || "", basePath)}>
-                  <NewsImage src={s.image} alt={s.title} />
-                </a>
-              )
-            ) : s.type === "featured" ? (
-              <Lead
-                portal={portal}
-                articles={picks}
-                categories={categories}
-                campaigns={campaigns}
-                basePath={basePath}
-              />
-            ) : (
-              <NewsGrid
-                articles={picks.slice(0, 9)}
-                categories={categories}
-                basePath={basePath}
-              />
-            )}
-          </section>
+          <div
+            key={s.id}
+            className={`visual-section visual-width-${s.layoutWidth || "full"}`}
+            style={{
+              backgroundColor: s.backgroundColor,
+              color: s.textColor,
+              padding: s.padding ? `${s.padding}px` : undefined,
+            }}
+          >
+            {render()}
+          </div>
         );
       })}
     </div>

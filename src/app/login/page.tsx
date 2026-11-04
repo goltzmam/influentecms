@@ -1,10 +1,10 @@
-import { login } from "./actions";
+import { login, emailLogin } from "./actions";
 export default async function Login({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; sent?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, sent } = await searchParams;
   const configured = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
@@ -36,42 +36,69 @@ export default async function Login({
           <p className="muted">Entre para cuidar dos seus portais.</p>
           {!configured && (
             <p role="alert" className="notice">
-              Configure o Supabase antes de acessar. Consulte o README do
-              projeto.
+              O acesso está temporariamente indisponível. Tente novamente em
+              instantes.
             </p>
           )}
           {error && (
             <p role="alert" className="notice">
-              {error === "access"
-                ? "Sua conta não tem permissão de administrador."
+              {error === "delivery" ? "Não foi possível enviar o link agora. Peça um convite à administração ou tente novamente em instantes." : error === "access"
+                ? "Este e-mail ainda não foi autorizado para nenhum portal."
                 : "Não foi possível entrar. Confira suas credenciais e tente novamente."}
             </p>
           )}
-          <form action={login}>
-            <label htmlFor="email">E-mail</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              required
-              placeholder="voce@empresa.com.br"
-            />
-            <label htmlFor="password">Senha</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              maxLength={128}
-            />
+          {sent && (
+            <p className="notice" role="status">
+              Se este e-mail estiver autorizado, você receberá um link para
+              entrar sem senha. Confira também a pasta de spam.
+            </p>
+          )}
+          <form action={emailLogin}>
+            <label>
+              Endereço de acesso
+              <input
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="voce@empresa.com.br"
+              />
+            </label>
             <button disabled={!configured} type="submit">
-              Entrar no painel <span>→</span>
+              Receber link de acesso
             </button>
+            <p className="field-hint">
+              Para editores convidados. Não é preciso criar senha.
+            </p>
           </form>
+          <details open>
+            <summary>Entrar com senha de administrador</summary>
+            <form action={login}>
+              <label htmlFor="email">E-mail</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="username"
+                required
+                placeholder="voce@empresa.com.br"
+              />
+              <label htmlFor="password">Senha</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                maxLength={128}
+              />
+              <button disabled={!configured} type="submit">
+                Entrar no painel <span>→</span>
+              </button>
+            </form>
+          </details>
           <p className="private-note">
-            Acesso restrito à administração.
+            Acesso restrito a pessoas convidadas.
             <br />
             Não há cadastro público nesta plataforma.
           </p>

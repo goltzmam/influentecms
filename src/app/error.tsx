@@ -4,7 +4,7 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
     <main className="error-page">
       <h1>Não foi possível carregar o painel</h1>
       <p>
-        Verifique a conexão e a configuração do Supabase. Seus dados não foram
+        Tente novamente em instantes. Seus dados não foram
         alterados.
       </p>
       <button onClick={reset}>Tentar novamente</button>

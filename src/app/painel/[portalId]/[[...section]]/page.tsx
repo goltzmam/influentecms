@@ -1,3 +1,5 @@
+import {EditorInviteLink} from "@/components/editor-invite-link";
+import { inviteEditor, removeEditor } from "../../team-actions";
 import Link from "next/link";
 import { AppearanceDetails } from "@/components/appearance-details";
 import { presentationSettings } from "@/lib/presentation";
@@ -48,6 +50,7 @@ const titles: Record<string, [string, string]> = {
     "Leitores e contato",
     "Mensagens e inscrições recebidas neste portal.",
   ],
+  equipe: ["Equipe", "Convide quem vai cuidar deste portal."],
   dominios: ["Domínios", "Um endereço próprio para sua publicação."],
 };
 function PortalId({ id }: { id: string }) {
@@ -88,7 +91,7 @@ function check<T>({
 }): NonNullable<T> {
   if (error)
     throw new Error(
-      "Não foi possível carregar os dados. Confira as migrations e a conexão.",
+      "Não foi possível carregar os dados. Tente novamente em instantes.",
     );
   return (data ?? []) as NonNullable<T>;
 }
@@ -101,7 +104,7 @@ export default async function PortalAdmin({
 }) {
   const { portalId, section = [] } = await params;
   const query = await searchParams;
-  const { client, portal } = await requirePortal(portalId);
+  const { client, portal, isOwner } = await requirePortal(portalId);
   const key = section[0] || "";
   if (key === "preview") notFound();
   if (key && !titles[key]) notFound();
@@ -419,6 +422,7 @@ export default async function PortalAdmin({
                 >
                   <option value="classic">Influente News</option>
                   <option value="modern">Revista Influente</option>
+                  <option value="daily">Jornal Diário</option>
                 </select>
               </label>
               <p className="field-hint">
@@ -427,7 +431,22 @@ export default async function PortalAdmin({
             </section>
             <AppearanceDetails portalId={portalId} settings={s} />
             <section className="panel">
-              <h2>Menu de navegação</h2><label>Organização do menu<select name="menusMode" aria-label="Organização do menu" defaultValue={s.menusMode||"auto"}><option value="auto">Categorias automáticas e meus links</option><option value="custom">Usar apenas meus links, na ordem escolhida</option></select></label>
+              <h2>Menu de navegação</h2>
+              <label>
+                Organização do menu
+                <select
+                  name="menusMode"
+                  aria-label="Organização do menu"
+                  defaultValue={s.menusMode || "auto"}
+                >
+                  <option value="auto">
+                    Categorias automáticas e meus links
+                  </option>
+                  <option value="custom">
+                    Usar apenas meus links, na ordem escolhida
+                  </option>
+                </select>
+              </label>
               <LinksEditor name="menus" value={s.menus} />
             </section>
             <section className="panel">
@@ -465,6 +484,13 @@ export default async function PortalAdmin({
       </form>
     );
   } else if (key === "homepage") {
+    const design = await client.rpc("get_home_design", { target: portalId });
+    const library = await client
+      .from("media")
+      .select("id,name,url")
+      .eq("portal_id", portalId)
+      .order("created_at", { ascending: false })
+      .limit(50);
     const [d, a, c, b, p] = await Promise.all([
       client.rpc("get_home_draft", { target: portalId }),
       client
@@ -492,6 +518,8 @@ export default async function PortalAdmin({
       throw new Error("Não foi possível carregar o editor.");
     body = (
       <HomeBuilder
+        draftDesign={design.data || undefined}
+        media={library.data || []}
         portalId={portalId}
         portal={portal}
         campaigns={(b.data as Campaign[]).filter(
@@ -765,7 +793,7 @@ export default async function PortalAdmin({
     ]);
     if (messages.error || subscribers.error)
       throw new Error(
-        "Não foi possível carregar mensagens. Aplique a migration de leitores.",
+        "Não foi possível carregar mensagens. Tente novamente em instantes.",
       );
     body = (
       <>
@@ -834,6 +862,64 @@ export default async function PortalAdmin({
         </section>
       </>
     );
+  } else if (key === "equipe") {
+    if (!isOwner) notFound();
+    const editors = check(
+      await client
+        .from("portal_editors")
+        .select("id,email,user_id,created_at")
+        .eq("portal_id", portalId),
+    );
+    body = (
+      <div className="editor-grid">
+        <section className="panel">
+          <h2>Editores deste portal</h2>
+          {editors.length ? (
+            editors.map((editor) => (
+              <div className="record-line" key={editor.id}>
+                <div>
+                  <strong>{editor.email}</strong>
+                  <p>
+                    {editor.user_id
+                      ? "Acesso ativo"
+                      : "Convite aguardando confirmação"}
+                  </p>
+                </div>
+                <form action={removeEditor}>
+                  <PortalId id={portalId} />
+                  <input type="hidden" name="id" value={editor.id} />
+                  <button className="button-ghost danger">
+                    Remover acesso
+                  </button>
+                </form>
+                <EditorInviteLink portalId={portalId} email={editor.email}/>
+                <form action={inviteEditor}>
+                  <PortalId id={portalId} />
+                  <input type="hidden" name="email" value={editor.email} />
+                  <button className="button-outline">Reenviar convite</button>
+                </form>
+              </div>
+            ))
+          ) : (
+            <p>Nenhum editor foi convidado ainda.</p>
+          )}
+        </section>
+        <form action={inviteEditor} className="panel">
+          <PortalId id={portalId} />
+          <h2>Adicionar editor</h2>
+          <label>
+            E-mail do editor
+            <input name="email" type="email" required maxLength={254} />
+          </label>
+          <p>
+            O editor recebe um link por e-mail e entra sem senha. Ele pode
+            cuidar do conteúdo, visual, anúncios e domínios deste portal. Outros
+            portais e a gestão da equipe continuam privados.
+          </p>
+          <SubmitButton>Confirmar e enviar convite</SubmitButton>
+        </form>
+      </div>
+    );
   } else if (key === "dominios") {
     const domains = check(
       await client.from("domains").select("*").eq("portal_id", portalId),
@@ -859,8 +945,7 @@ export default async function PortalAdmin({
               ↗
             </a>
             <p className="field-hint">
-              Subdomínios exigem wildcard DNS e domínio wildcard associado ao
-              projeto Vercel.
+              Este endereço já pode ser usado enquanto você conecta seu domínio.
             </p>
           </section>
           {domains.map((d) => (
@@ -870,9 +955,9 @@ export default async function PortalAdmin({
                 {d.verified ? "Verificado" : "Aguardando DNS"}
               </span>
               <p>
-                Adicione este domínio ao seu DNS conforme os registros indicados
-                em Vercel → Project → Domains. O destino pode variar por
-                projeto; use os valores oficiais exibidos pelo provedor.
+                No site onde você comprou o domínio, abra as configurações de
+                endereço e adicione os registros abaixo. Depois clique em
+                Verificar conexão.
               </p>
               {d.provider_status?.verification?.map(
                 (
@@ -924,9 +1009,8 @@ export default async function PortalAdmin({
             </label>
             <SubmitButton>Conectar domínio</SubmitButton>
             <p className="field-hint">
-              Necessita de projeto Vercel e token administrativo configurados no
-              servidor. Nenhum domínio será marcado como verificado sem resposta
-              oficial.
+              Use um domínio que pertence a você. Mostraremos aqui os próximos
+              passos para ativá-lo.
             </p>
           </form>
         </aside>

@@ -32,7 +32,10 @@ async function migrate(){
   await query(migrationSql({version,name,source}));
   console.log(`PASS migration ${file}`);
  }
- await api('https://api.supabase.com',`/v1/projects/${ref}/config/auth`,token,{method:'PATCH',body:{disable_signup:true}});
+ const authSettings=await api('https://api.supabase.com',`/v1/projects/${ref}/config/auth`,token);
+ const site=process.env.APP_URL||'https://influentecms.vercel.app';
+ const redirects=[...new Set([...(authSettings.uri_allow_list||'').split(',').filter(Boolean),`${site}/auth/callback**`])].join(',');
+ await api('https://api.supabase.com',`/v1/projects/${ref}/config/auth`,token,{method:'PATCH',body:{disable_signup:true,site_url:site,uri_allow_list:redirects}});
  console.log('PASS Supabase: migrations aplicadas e cadastro público desativado.');
  if((projectId&&process.env.VERCEL_API_TOKEN)||(process.env.ADMIN_EMAIL&&process.env.ADMIN_PASSWORD)){
   const keys=await api('https://api.supabase.com',`/v1/projects/${ref}/api-keys`,token);

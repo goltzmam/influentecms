@@ -18,7 +18,9 @@ import {
 } from "lucide-react";
 export function AdminNav({
   portals,
+  isOwner = true,
 }: {
+  isOwner?: boolean;
   portals: { id: string; name: string; slug: string }[];
 }) {
   const path = usePathname(),
@@ -36,6 +38,7 @@ export function AdminNav({
     ["parceiros", "Parceiros", Handshake],
     ["paginas", "Páginas", FileText],
     ["dominios", "Domínios", Globe2],
+    ...(isOwner ? [["equipe", "Equipe", Handshake] as const] : []),
     ["leitores", "Leitores e contato", Handshake],
   ] as const;
   return (
@@ -62,7 +65,15 @@ export function AdminNav({
           <LayoutDashboard size={17} />
           Dashboard geral
         </Link>
-        <Link className={path==='/painel/ia'?'nav-active':''} href="/painel/ia"><Sparkles size={17}/>Criar com IA</Link>
+        {isOwner && (
+          <Link
+            className={path === "/painel/ia" ? "nav-active" : ""}
+            href="/painel/ia"
+          >
+            <Sparkles size={17} />
+            Criar com IA
+          </Link>
+        )}
         {portal && (
           <>
             <p className="workspace-label">{portal.name}</p>

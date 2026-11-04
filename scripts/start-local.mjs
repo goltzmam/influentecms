@@ -14,7 +14,7 @@ const result = spawnSync(
     "supabase",
     "start",
     "-x",
-    "realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor",
+    "realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor",
     ...flags,
   ],
   { stdio: ["ignore", fd, fd] },

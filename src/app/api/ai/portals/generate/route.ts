@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     )
       throw new ApiFailure(
         503,
-        "Ative a conexão da FLUE nas configurações do servidor para criar portais.",
+        "A FLUE está temporariamente indisponível. Tente novamente em instantes.",
       );
     const start = await auth.client.rpc("start_portal_ai_job", {
       p_organization: auth.organizationId,
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
         );
       throw new ApiFailure(
         503,
-        "Não foi possível iniciar. Confira se a migration de IA foi aplicada.",
+        "Não foi possível iniciar a criação. Tente novamente em instantes.",
       );
     }
     jobId = start.data;

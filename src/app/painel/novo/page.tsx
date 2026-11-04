@@ -1,3 +1,4 @@
+import {requireAdmin} from "@/lib/auth";
 import Link from "next/link";
 import { createPortal } from "../actions";
 import { PortalCreator } from "@/components/portal-creator";
@@ -6,6 +7,7 @@ export default async function NewPortal({
 }: {
   searchParams: Promise<{ notice?: string }>;
 }) {
+  await requireAdmin();
   const { notice } = await searchParams;
   return (
     <>

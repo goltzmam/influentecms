@@ -7,7 +7,7 @@ export async function vercel(
     project = process.env.VERCEL_PROJECT_ID;
   if (!token || !project)
     throw new Error(
-      "CMS:Configure VERCEL_API_TOKEN e VERCEL_PROJECT_ID no servidor.",
+      "CMS:Domínio salvo. A conexão automática precisa ser ativada pelo responsável pela plataforma.",
     );
   const query = process.env.VERCEL_TEAM_ID
     ? `?teamId=${encodeURIComponent(process.env.VERCEL_TEAM_ID)}`
@@ -25,7 +25,7 @@ export async function vercel(
   if (response.status === 404 && options.allow404) return null;
   if (!response.ok)
     throw new Error(
-      `CMS:O provedor recusou a operação de domínio (HTTP ${response.status}). Confira projeto, permissões e DNS.`,
+      `CMS:Não foi possível conectar o endereço agora. Confira se ele já está associado a outro site e tente novamente.`,
     );
   if (response.status === 204) return {};
   return response.json();

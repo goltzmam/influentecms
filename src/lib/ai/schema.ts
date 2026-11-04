@@ -37,7 +37,7 @@ export const briefSchema = z.object({
 export const blueprintShape = z.object({
   name: text(120).min(1),
   slug,
-  template: z.enum(["classic", "modern"]),
+  template: z.enum(["classic", "modern", "daily"]),
   rationale: text(1200),
   identity: z.object({
     color,
@@ -132,7 +132,7 @@ export type AiBlueprint = z.infer<typeof blueprintShape>;
 export const editsSchema = z.object({
   name: text(120).min(1),
   slug,
-  template: z.enum(["classic", "modern"]),
+  template: z.enum(["classic", "modern", "daily"]),
   color,
   accentColor: color,
   surfaceColor: color,

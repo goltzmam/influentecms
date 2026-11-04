@@ -30,7 +30,7 @@ function issue(error: unknown) {
       .slice(0, 500);
   if (error instanceof Error && error.message.startsWith("CMS:"))
     return error.message.slice(4, 500);
-  return "Não foi possível salvar. Confira os campos, a conexão e as migrations. Slugs e domínios devem ser únicos.";
+  return "Não foi possível salvar. Confira os campos e tente novamente. O endereço escolhido pode já estar em uso.";
 }
 function finish(path: string, message: string) {
   revalidatePath("/", "layout");
@@ -45,7 +45,7 @@ export async function createPortal(form: FormData) {
       .object({
         name: z.string().trim().min(1).max(120),
         slug: slugSchema,
-        template: z.enum(["classic", "modern"]),
+        template: z.enum(["classic", "modern", "daily"]),
         color: z.string().regex(/^#[a-f0-9]{6}$/i),
         logo: imageSchema,
       })
@@ -190,7 +190,7 @@ export async function saveSettings(form: FormData) {
       header: str(form, "header"),
       footer: str(form, "footer"),
       menus: JSON.parse(str(form, "menus") || "[]"),
-      menusMode: str(form,"menusMode")||"auto",
+      menusMode: str(form, "menusMode") || "auto",
       socials: JSON.parse(str(form, "socials") || "[]"),
       accentColor: str(form, "accentColor"),
       surfaceColor: str(form, "surfaceColor"),
@@ -218,7 +218,9 @@ export async function saveSettings(form: FormData) {
       socialCards: JSON.parse(str(form, "socialCards") || "[]"),
     });
     const name = z.string().trim().min(1).max(120).parse(str(form, "name"));
-    const template = z.enum(["classic", "modern"]).parse(str(form, "template"));
+    const template = z
+      .enum(["classic", "modern", "daily"])
+      .parse(str(form, "template"));
     const { error } = await client
       .from("portals")
       .update({ name, template, settings })
@@ -254,13 +256,61 @@ export async function saveHomepage(form: FormData) {
       if (error || categories.some((id) => !data?.some((row) => row.id === id)))
         throw new Error("CMS:Escolha apenas categorias deste portal.");
     }
+    const design = z
+      .object({
+        color: z
+          .string()
+          .regex(/^#[a-f0-9]{6}$/i)
+          .optional(),
+        accentColor: z
+          .string()
+          .regex(/^#[a-f0-9]{6}$/i)
+          .optional(),
+        surfaceColor: z
+          .string()
+          .regex(/^#[a-f0-9]{6}$/i)
+          .optional(),
+        textColor: z
+          .string()
+          .regex(/^#[a-f0-9]{6}$/i)
+          .optional(),
+        font: z.enum(["sans", "serif"]).optional(),
+      })
+      .parse(JSON.parse(str(form, "design") || "{}"));
+    const template = z
+      .enum(["classic", "modern", "daily"])
+      .parse(str(form, "template") || portal.template);
+    const campaignIds = sections
+      .map((s) => s.campaignId)
+      .filter((id): id is string => !!id);
+    if (campaignIds.length) {
+      const campaigns = await client
+        .from("campaigns")
+        .select("id")
+        .eq("portal_id", portal.id)
+        .in("id", campaignIds);
+      if (
+        campaigns.error ||
+        campaignIds.some((id) => !campaigns.data?.some((c) => c.id === id))
+      )
+        throw new Error("CMS:Escolha apenas anúncios deste portal.");
+    }
     const publish = str(form, "intent") === "publish";
     const { error } = await client
       .from("portals")
       .update(
         publish
-          ? { home_draft: sections, home_published: sections }
-          : { home_draft: sections },
+          ? {
+              home_draft: sections,
+              home_published: sections,
+              settings: { ...portal.settings, ...design },
+              template,
+              design_draft: { settings: design, template },
+            }
+          : {
+              home_draft: sections,
+              design_draft: { settings: design, template },
+            },
       )
       .eq("id", portal.id);
     if (error) throw error;
@@ -514,9 +564,12 @@ export async function addDomain(form: FormData) {
   const { client, portal } = await requirePortal(str(form, "portal_id"));
   let message = "Domínio cadastrado. Configure o DNS e verifique.";
   try {
-    const hostname = domainSchema.parse(str(form, "hostname"));
-    // Validate local credentials before making any provider change.
-    serviceClient();
+    const rawHostname = str(form, "hostname").trim().toLowerCase();
+    const hostname = domainSchema.parse(
+      rawHostname.startsWith("https://") || rawHostname.startsWith("http://")
+        ? new URL(rawHostname).hostname
+        : rawHostname.replace(/\/$/, ""),
+    );
     const { data: existing, error: readError } = await client
       .from("domains")
       .select("id")
@@ -538,7 +591,9 @@ export async function addDomain(form: FormData) {
     const config = await vercel(
       `/v6/domains/${encodeURIComponent(hostname)}/config`,
     );
-    const result = await serviceClient()
+    const result = await (
+      await serviceClient()
+    )
       .from("domains")
       .update({
         provider_status: {
@@ -569,7 +624,7 @@ export async function verifyDomain(form: FormData) {
       .eq("portal_id", portal.id)
       .single();
     if (error) throw error;
-    const service = serviceClient();
+    const service = await serviceClient();
     const host = encodeURIComponent(data.hostname),
       project = encodeURIComponent(process.env.VERCEL_PROJECT_ID || "");
     // GET ownership first; a hostname on another project must never be accepted.
@@ -605,7 +660,7 @@ export async function verifyDomain(form: FormData) {
       .eq("id", id);
     if (updateError) throw updateError;
     message = verified
-      ? "Domínio verificado. HTTPS é emitido automaticamente pela Vercel."
+      ? "Domínio verificado. A conexão segura será ativada automaticamente."
       : "DNS ainda pendente. Confira os registros e tente novamente.";
   } catch (e) {
     message = issue(e);
@@ -623,10 +678,11 @@ export async function deleteDomain(form: FormData) {
       .eq("portal_id", portal.id)
       .single();
     if (error) throw error;
-    await vercel(
-      `/v9/projects/${encodeURIComponent(process.env.VERCEL_PROJECT_ID || "")}/domains/${encodeURIComponent(data.hostname)}`,
-      { method: "DELETE", allow404: true },
-    );
+    if (process.env.VERCEL_API_TOKEN)
+      await vercel(
+        `/v9/projects/${encodeURIComponent(process.env.VERCEL_PROJECT_ID || "")}/domains/${encodeURIComponent(data.hostname)}`,
+        { method: "DELETE", allow404: true },
+      );
     const result = await client
       .from("domains")
       .delete()

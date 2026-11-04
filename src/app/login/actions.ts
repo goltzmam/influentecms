@@ -12,3 +12,26 @@ export async function login(form: FormData) {
   if (error) redirect("/login?error=credentials");
   redirect("/painel");
 }
+export async function emailLogin(form: FormData) {
+  const email = z.email().safeParse(
+    String(form.get("email") || "")
+      .trim()
+      .toLowerCase(),
+  );
+  if (!email.success) redirect("/login?error=credentials");
+  const { createClient: publicClient } = await import("@supabase/supabase-js");
+  const client = publicClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false, flowType: "implicit" } },
+  );
+  const sent=await client.auth.signInWithOtp({
+    email: email.data,
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: `${process.env.APP_URL || "http://localhost:3000"}/auth/callback`,
+    },
+  });
+  if(sent.error && ["unexpected_failure","email_address_not_authorized","over_email_send_rate_limit"].includes(sent.error.code||""))redirect("/login?error=delivery");
+  redirect("/login?sent=1");
+}

@@ -39,7 +39,7 @@ export const settingsSchema = z.object({
   header: text(100),
   socials: z.array(z.object({ label: text(60), url: linkSchema })).max(12),
   menus: z.array(z.object({ label: text(60), url: linkSchema })).max(15),
-  menusMode: z.enum(["auto","custom"]).optional(),
+  menusMode: z.enum(["auto", "custom"]).optional(),
   accentColor: z
     .string()
     .regex(/^#[0-9a-f]{6}$/i)
@@ -106,8 +106,44 @@ export const sectionsSchema = z
         "banner",
         "text",
         "image",
+        "video",
       ]),
       title: text(120),
+      videoUrl: imageSchema
+        .refine((value) => {
+          if (!value) return true;
+          const u = new URL(value);
+          return (
+            [
+              "youtube.com",
+              "www.youtube.com",
+              "youtu.be",
+              "www.youtube-nocookie.com",
+            ].includes(u.hostname) || /\.(mp4|webm)$/i.test(u.pathname)
+          );
+        }, "Use um link de vídeo do YouTube ou um arquivo MP4/WebM.")
+        .optional(),
+      layoutWidth: z.enum(["full", "half", "third"]).optional(),
+      backgroundColor: z
+        .string()
+        .regex(/^#[0-9a-f]{6}$/i)
+        .optional(),
+      textColor: z
+        .string()
+        .regex(/^#[0-9a-f]{6}$/i)
+        .optional(),
+      padding: z.number().int().min(0).max(80).optional(),
+      adFormat: z
+        .enum([
+          "billboard",
+          "leaderboard",
+          "rectangle",
+          "skyscraper",
+          "square",
+          "native",
+        ])
+        .optional(),
+      campaignId: z.uuid().optional().or(z.literal("")),
       categoryId: z.uuid().optional().or(z.literal("")),
       articleIds: z.array(z.uuid()).max(12).optional(),
       text: text(5000).optional(),

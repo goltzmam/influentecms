@@ -135,7 +135,7 @@ export function AiPortalStudio({
   const [edits, setEdits] = useState({
     name: "",
     slug: "",
-    template: "classic" as "classic" | "modern",
+    template: "classic" as "classic" | "modern" | "daily",
     color: "#6324dc",
     accentColor: "#d5ff00",
     surfaceColor: "#ffffff",
@@ -179,7 +179,7 @@ export function AiPortalStudio({
       });
       const data = await response.json().catch(() => {
         throw new Error(
-          "A FLUE não recebeu uma resposta do servidor. Aguarde e tente novamente; seu briefing continua no formulário.",
+          "A FLUE não recebeu uma resposta. Aguarde e tente novamente; seu briefing continua no formulário.",
         );
       });
       if (!response.ok)
@@ -200,7 +200,7 @@ export function AiPortalStudio({
       });
       const data = await response.json().catch(() => {
         throw new Error(
-          "A FLUE não recebeu uma resposta do servidor. Aguarde e tente novamente; seu briefing continua no formulário.",
+          "A FLUE não recebeu uma resposta. Aguarde e tente novamente; seu briefing continua no formulário.",
         );
       });
       if (!response.ok) throw new Error(data.error);
@@ -245,7 +245,7 @@ export function AiPortalStudio({
       });
       const data = await response.json().catch(() => {
         throw new Error(
-          "A FLUE não recebeu uma resposta do servidor. Aguarde e tente novamente; seu briefing continua no formulário.",
+          "A FLUE não recebeu uma resposta. Aguarde e tente novamente; seu briefing continua no formulário.",
         );
       });
       if (!response.ok)
@@ -291,15 +291,13 @@ export function AiPortalStudio({
       </div>
       {!configured && (
         <div className="notice" role="status">
-          Para ativar a FLUE, configure a conexão segura no servidor e faça um
-          novo deploy.{" "}
+          A FLUE está temporariamente indisponível. Tente novamente em instantes.{" "}
           <Link href="/painel/configuracoes">Ver integrações →</Link>
         </div>
       )}
       {!migrationReady && (
         <div className="notice" role="alert">
-          O banco precisa receber a migration do Estúdio IA. O próximo deploy de
-          produção aplicará a atualização automaticamente.
+          O Estúdio FLUE está recebendo uma atualização. Tente novamente em instantes.
         </div>
       )}
       {error && (
@@ -409,7 +407,7 @@ export function AiPortalStudio({
             </ul>
             <p>
               Você revisa a proposta antes da criação. Depois, continua editando
-              no mesmo painel, com TipTap, mídia, banners e domínios.
+              no mesmo painel, com editor de texto, mídia, banners e domínios.
             </p>
           </aside>
         </div>
@@ -501,12 +499,12 @@ export function AiPortalStudio({
                     onChange={(e) =>
                       setEdits({
                         ...edits,
-                        template: e.target.value as "classic" | "modern",
+                        template: e.target.value as "classic" | "modern" | "daily",
                       })
                     }
                   >
                     <option value="classic">Influente News</option>
-                    <option value="modern">Revista Influente</option>
+                    <option value="modern">Revista Influente</option><option value="daily">Jornal Diário</option>
                   </select>
                 </label>
                 <div className="ai-palette">
@@ -616,7 +614,7 @@ export function AiPortalStudio({
                   Publicar também os textos iniciais gerados por IA
                 </label>
                 <p className="field-hint">
-                  Desmarcado: textos ficam como rascunhos no TipTap. Revise o
+                  Desmarcado: textos ficam como rascunhos no editor de texto. Revise o
                   conteúdo antes de publicar. Páginas legais permanecem em
                   rascunho.
                 </p>

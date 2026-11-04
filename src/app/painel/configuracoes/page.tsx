@@ -1,63 +1,27 @@
-import { requireAdmin } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
 export default async function Settings() {
-  const { user } = await requireAdmin();
-  const vars = [
-    "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-    "APP_URL",
-    "PORTAL_BASE_DOMAIN",
-    "VERCEL_API_TOKEN",
-    "VERCEL_PROJECT_ID",
-    "SUPABASE_SERVICE_ROLE_KEY",
-  ];
+  const { user, isOwner } = await requireAccess();
   return (
     <>
-      <p className="eyebrow">WORKSPACE PRIVADO</p>
+      <p className="eyebrow">SUA CONTA</p>
       <h1>Configurações gerais</h1>
       <section className="panel">
         <h2>Conta e acesso</h2>
         <p>{user.email}</p>
         <p className="muted">
-          O acesso é privado. Cadastros públicos devem permanecer desativados no
-          Supabase. Gerencie senha e recuperação pelo processo administrativo
-          documentado.
+          {isOwner
+            ? "Você administra seus portais e pode convidar editores para cada publicação."
+            : "Você pode editar os portais para os quais recebeu um convite."}
+        </p>
+        <p>
+          Para entrar sem senha, solicite um link de acesso na tela de entrada.
         </p>
       </section>
       <section className="panel">
-        <h2>Integrações do ambiente</h2>
-        <p className="muted">
-          Por segurança, credenciais são configuradas no ambiente de hospedagem
-          e seus valores nunca são exibidos aqui.
-        </p>
-        {vars.map((name) => (
-          <div className="record-line" key={name}>
-            <code>{name}</code>
-            <span
-              className={`badge ${process.env[name] ? "published" : "draft"}`}
-            >
-              {process.env[name] ? "Configurada" : "Pendente"}
-            </span>
-          </div>
-        ))}
-        <div className="record-line">
-          <strong>FLUE</strong>
-          <span
-            className={`badge ${process.env.GEMINI_API_KEY || process.env.GEMINI_API || process.env.GOOGLE_API_KEY ? "published" : "draft"}`}
-          >
-            {process.env.GEMINI_API_KEY ||
-            process.env.GEMINI_API ||
-            process.env.GOOGLE_API_KEY
-              ? "Conectada"
-              : "Pendente"}
-          </span>
-        </div>
-      </section>
-      <section className="panel">
-        <h2>Configuração editorial</h2>
-        <p className="muted">
-          Use o seletor de portais para personalizar identidade, menus, páginas,
-          campanhas e domínios de cada publicação. Armazenamento de imagens:
-          Supabase Storage. Horário de edição de agendamentos: UTC.
+        <h2>Seus portais</h2>
+        <p>
+          Escolha um portal no menu para editar a página inicial, identidade,
+          notícias, anúncios e endereço.
         </p>
       </section>
     </>

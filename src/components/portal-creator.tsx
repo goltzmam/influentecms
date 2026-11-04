@@ -70,7 +70,7 @@ export function PortalCreator({
         <section className="panel">
           <h2>Escolha a sua linguagem</h2>
           <div className="template-options">
-            {["classic", "modern"].map((t) => (
+            {["classic", "modern", "daily"].map((t) => (
               <label
                 key={t}
                 className={`template-option ${template === t ? "selected" : ""}`}
@@ -82,21 +82,36 @@ export function PortalCreator({
                   checked={template === t}
                   onChange={() => {
                     setTemplate(t);
+                    if (t === "daily") setColor("#c4170c");
                     if (
-                      ["Influente News", "Revista Influente", ""].includes(name)
+                      [
+                        "Influente News",
+                        "Revista Influente",
+                        "Jornal Diário",
+                        "",
+                      ].includes(name)
                     )
                       setName(
-                        t === "classic"
-                          ? "Influente News"
-                          : "Revista Influente",
+                        t === "daily"
+                          ? "Jornal Diário"
+                          : t === "classic"
+                            ? "Influente News"
+                            : "Revista Influente",
                       );
                     if (
-                      ["influente-news", "revista-influente", ""].includes(slug)
+                      [
+                        "influente-news",
+                        "revista-influente",
+                        "jornal-diario",
+                        "",
+                      ].includes(slug)
                     )
                       setSlug(
-                        t === "classic"
-                          ? "influente-news"
-                          : "revista-influente",
+                        t === "daily"
+                          ? "jornal-diario"
+                          : t === "classic"
+                            ? "influente-news"
+                            : "revista-influente",
                       );
                   }}
                 />
@@ -109,12 +124,18 @@ export function PortalCreator({
                   </div>
                 </div>
                 <strong>
-                  {t === "classic" ? "Influente News" : "Revista Influente"}
+                  {t === "daily"
+                    ? "Jornal Diário"
+                    : t === "classic"
+                      ? "Influente News"
+                      : "Revista Influente"}
                 </strong>
                 <p>
-                  {t === "classic"
-                    ? "Capa editorial com manchetes, vídeos e editorias no formato Influente."
-                    : "A mesma estrutura editorial com tipografia de revista e identidade configurável."}
+                  {t === "daily"
+                    ? "Manchete visual, notícias em lista e coluna lateral."
+                    : t === "classic"
+                      ? "Capa editorial com manchetes, vídeos e editorias no formato Influente."
+                      : "A mesma estrutura editorial com tipografia de revista e identidade configurável."}
                 </p>
               </label>
             ))}

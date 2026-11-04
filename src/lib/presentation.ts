@@ -6,6 +6,12 @@ export const templates = {
     accentColor: "#d5ff00",
     tagline: "Notícia por onde você passa.",
   },
+  daily: {
+    name: "Jornal Diário",
+    color: "#c4170c",
+    accentColor: "#ffd166",
+    tagline: "Informação que faz parte do seu dia.",
+  },
   modern: {
     name: "Revista Influente",
     color: "#6324dc",
@@ -15,7 +21,7 @@ export const templates = {
 } as const;
 export function presentationSettings(
   s: Settings,
-  template: "classic" | "modern",
+  template: "classic" | "modern" | "daily",
 ): Settings {
   return {
     ...templates[template],
@@ -34,7 +40,10 @@ export function presentationSettings(
     ...s,
   };
 }
-export function referenceSections(categories: Category[]): Section[] {
+export function referenceSections(
+  categories: Category[],
+  template: "classic" | "modern" | "daily" = "classic",
+): Section[] {
   const lead: Section = {
     id: "10000000-0000-4000-8000-000000000001",
     type: "lead",
@@ -51,18 +60,35 @@ export function referenceSections(categories: Category[]): Section[] {
     title: "",
     position: "between",
   };
+  if (template === "daily")
+    return [
+      lead,
+      { ...banner, position: "header" },
+      {
+        id: "10000000-0000-4000-8000-000000000004",
+        type: "latest",
+        title: "Últimas notícias",
+      },
+    ];
   const blocks: Section[] = [lead, sponsored];
-  [...categories].sort((a,b)=>{const rank=(s:string)=>s==="politica"?0:s==="entretenimento"?1:2;return rank(a.slug)-rank(b.slug);}).slice(0, 2).forEach((c, i) => {
-    blocks.push({
-      id: c.id,
-      type: "category",
-      title: c.name,
-      categoryId: c.id,
-      layout: i === 0 ? "news" : "magazine",
-      position: "category",
+  [...categories]
+    .sort((a, b) => {
+      const rank = (s: string) =>
+        s === "politica" ? 0 : s === "entretenimento" ? 1 : 2;
+      return rank(a.slug) - rank(b.slug);
+    })
+    .slice(0, 2)
+    .forEach((c, i) => {
+      blocks.push({
+        id: c.id,
+        type: "category",
+        title: c.name,
+        categoryId: c.id,
+        layout: i === 0 ? "news" : "magazine",
+        position: "category",
+      });
+      if (i === 0) blocks.push(banner);
     });
-    if (i === 0) blocks.push(banner);
-  });
   return blocks;
 }
 export function youtubeEmbed(raw: string) {

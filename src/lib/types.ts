@@ -44,8 +44,22 @@ export type Section = {
     | "sponsored"
     | "banner"
     | "text"
-    | "image";
+    | "image"
+    | "video";
   title: string;
+  videoUrl?: string;
+  layoutWidth?: "full" | "half" | "third";
+  backgroundColor?: string;
+  textColor?: string;
+  padding?: number;
+  adFormat?:
+    | "billboard"
+    | "leaderboard"
+    | "rectangle"
+    | "skyscraper"
+    | "square"
+    | "native";
+  campaignId?: string;
   categoryId?: string;
   articleIds?: string[];
   text?: string;
@@ -64,7 +78,7 @@ export type Portal = {
   organization_id: string;
   name: string;
   slug: string;
-  template: "classic" | "modern";
+  template: "classic" | "modern" | "daily";
   settings: Settings;
   home_published: Section[];
   created_at: string;
