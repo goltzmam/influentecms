@@ -25,3 +25,11 @@ O `wget` dos health checks internos dos contêineres Auth/Storage ignora NO_PROX
 A integração de domínios está implementada por API oficial, mas a associação de um domínio real, propagação DNS, emissão HTTPS e implantação Vercel dependem de credenciais/projeto/domínio do proprietário. Nenhum desses resultados foi simulado ou declarado concluído. O Supabase de produção também deve receber migrations e configuração de Auth antes da implantação.
 
 O proprietário deve criar sua conta administrativa pelo processo seguro do README; não foi inventado um e-mail ou uma senha de produção. A configuração reutilizável de instalação/inicialização foi salva como rascunho. Salvar esse rascunho não publica o ambiente e não valida restauração em uma tarefa nova.
+
+## Estúdio Gemini
+
+- Schema validado e HTML gerado escapado antes de persistir.
+- Testes de contrato do Gemini com respostas controladas: JSON estruturado, URL Context, confirmação de referência, erros de cota e rejeição de planos inválidos.
+- Banco com todas as migrations: criação atômica, slugs conflitantes sem resíduos, idempotência, isolamento de organizações, visitante sem acesso, rascunhos por padrão e limite de cinco gerações/hora.
+- Build Next.js inclui páginas e rotas privadas de IA. Teste de navegador usa projeto explicitamente identificado como fixture, autenticando e persistindo dados/mídia no Supabase local.
+- Geração real com Google depende de `GEMINI_API_KEY`; sem chave não há simulação nem chamada de geração confirmada.

@@ -659,7 +659,7 @@ export function Homepage({
   return (
     <div className="reference-home">
       <h1 className="sr-only">{portal.name} — últimas notícias</h1>
-      {!articles.length && (
+      {!articles.length && !blocks.some(s=>s.type==="text"||s.type==="image") && (
         <div className="public-empty">
           <h2>Em breve, novas histórias por aqui.</h2>
           <p>Acompanhe as próximas publicações.</p>

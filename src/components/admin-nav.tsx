@@ -14,6 +14,7 @@ import {
   Tags,
   FileText,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
 export function AdminNav({
   portals,
@@ -61,6 +62,7 @@ export function AdminNav({
           <LayoutDashboard size={17} />
           Dashboard geral
         </Link>
+        <Link className={path==='/painel/ia'?'nav-active':''} href="/painel/ia"><Sparkles size={17}/>Criar com IA</Link>
         {portal && (
           <>
             <p className="workspace-label">{portal.name}</p>
