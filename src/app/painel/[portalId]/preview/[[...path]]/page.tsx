@@ -81,7 +81,7 @@ export default async function Preview({
           campaigns={visibleCampaigns}
         />
       ) : (
-        <Homepage
+        <Homepage preview
           portal={portal}
           articles={articles}
           categories={categories}

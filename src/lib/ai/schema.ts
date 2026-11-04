@@ -1,3 +1,4 @@
+import { referenceAdSlots } from "../advertising.ts";
 import {
   experienceSchema,
   menuSchema,
@@ -312,7 +313,13 @@ export function creationPayload(input: AiBlueprint) {
             },
           ]
         : []),
-      ...plan.sections,
+      ...plan.sections.map((section, index) => ({
+        ...section,
+        adSlots: referenceAdSlots(
+          section.type,
+          `30000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+        ),
+      })),
     ],
     pages: plan.pages.map((p) => ({
       ...p,

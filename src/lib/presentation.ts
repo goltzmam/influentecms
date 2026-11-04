@@ -54,7 +54,7 @@ export function presentationSettings(
           ),
       },
       contact: {
-        mode: "compact",
+        mode: template === "classic" ? "inline" : "compact",
         maxWidth: 640,
         columns: "two",
         background: "#ffffff",
@@ -63,7 +63,7 @@ export function presentationSettings(
         radius: 16,
         padding: 24,
         messageRows: 3,
-        fields: ["phone", "subject"],
+        fields: template === "classic" ? ["address","neighborhood","phone","subject","kind"] : ["phone", "subject"],
         ...s.experience?.contact,
       },
       footer: {
@@ -73,13 +73,13 @@ export function presentationSettings(
             ? "#f4f1ec"
             : template === "daily"
               ? s.color || templates[template].color
-              : "#12241e",
+              : s.color || templates[template].color,
         color: template === "modern" ? "#21152e" : "#ffffff",
         columns: 4,
         showLogo: true,
         showSocials: true,
         showRss: true,
-        advertBackground: s.accentColor || templates[template].accentColor,
+        advertBackground: template === "classic" ? "#ffffff" : s.accentColor || templates[template].accentColor,
         advertColor: s.color || templates[template].color,
         ...s.experience?.footer,
       },

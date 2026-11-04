@@ -142,7 +142,15 @@ export type PageContext = {
 };
 export const creativeSchema = z
   .object({
-    mediaType: z.enum(["image", "video", "text"]).default("image"),
+    mediaType: z.enum(["image", "video", "text", "google"]).default("image"),
+    googlePublisherId: z
+      .string()
+      .regex(/^(?:ca-pub-\d{16})?$/)
+      .optional(),
+    googleSlot: z
+      .string()
+      .regex(/^\d{0,20}$/)
+      .optional(),
     videoUrl: videoUrl.optional(),
     description: text(1000).optional(),
     cta: text(80).optional(),

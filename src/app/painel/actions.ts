@@ -16,6 +16,7 @@ import {
   slugSchema,
 } from "@/lib/validation";
 import { cleanHtml } from "@/lib/content";
+import { advertisingSchema } from "@/lib/advertising";
 import { resolveDomain } from "@/lib/domain-state";
 import { vercel } from "@/lib/vercel";
 import { serviceClient } from "@/lib/supabase/service";
@@ -184,6 +185,12 @@ export async function saveSettings(form: FormData) {
   try {
     const settings = settingsSchema.parse({
       ...portal.settings,
+      advertising: advertisingSchema.parse(
+        JSON.parse(
+          str(form, "advertising") ||
+            JSON.stringify(portal.settings.advertising || {}),
+        ),
+      ),
       experience: experienceSchema.parse(
         JSON.parse(
           str(form, "experience") ||
@@ -244,6 +251,25 @@ export async function saveHomepage(form: FormData) {
   let message = "Rascunho da homepage salvo.";
   try {
     const sections = sectionsSchema.parse(JSON.parse(str(form, "sections")));
+    const slotCampaignIds = [
+      ...new Set(
+        sections.flatMap((s) =>
+          (s.adSlots || []).map((slot) => slot.campaignId).filter(Boolean),
+        ),
+      ),
+    ];
+    if (slotCampaignIds.length) {
+      const valid = await client
+        .from("campaigns")
+        .select("id")
+        .eq("portal_id", portal.id)
+        .in("id", slotCampaignIds);
+      if (
+        valid.error ||
+        slotCampaignIds.some((id) => !valid.data?.some((c) => c.id === id))
+      )
+        throw new Error("CMS:Escolha apenas anúncios deste portal.");
+    }
     const ids = sections.flatMap((s) => s.articleIds || []);
     const categories = sections.map((s) => s.categoryId).filter(Boolean);
     if (ids.length) {
@@ -266,6 +292,7 @@ export async function saveHomepage(form: FormData) {
     }
     const design = z
       .object({
+        advertising: advertisingSchema.optional(),
         experience: experienceSchema.optional(),
         menus: z.array(menuSchema).max(15).optional(),
         menusMode: z.enum(["auto", "custom"]).optional(),
@@ -435,6 +462,19 @@ export async function saveCampaign(form: FormData) {
         ends_at: date(form, "ends_at"),
         active: form.has("active"),
       });
+    if (input.creative.mediaType === "google") {
+      const publisher = portal.settings.advertising?.publisherId;
+      if (
+        !portal.settings.advertising?.enabled ||
+        !/^ca-pub-\d{16}$/.test(publisher || "")
+      )
+        throw new Error(
+          "CMS:Conecte a conta Google em Personalização antes de criar este bloco.",
+        );
+      if (!/^\d{1,20}$/.test(input.creative.googleSlot || ""))
+        throw new Error("CMS:Informe o identificador do bloco Google.");
+      input.creative.googlePublisherId = publisher;
+    }
     if (input.creative.mediaType === "image" && !input.image_url)
       throw new Error("CMS:Adicione uma imagem ao anúncio.");
     if (input.creative.mediaType === "video" && !input.creative.videoUrl)

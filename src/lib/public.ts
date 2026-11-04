@@ -45,11 +45,25 @@ export async function publicData(portal: Portal) {
   return {
     articles: results[0].data as Article[],
     categories: results[1].data as Category[],
-    campaigns: (results[2].data as Campaign[]).filter(
-      (c) =>
-        (!c.starts_at || Date.parse(c.starts_at) <= now) &&
-        (!c.ends_at || Date.parse(c.ends_at) > now),
-    ),
+    campaigns: (results[2].data as Campaign[])
+      .filter(
+        (c) =>
+          (c.creative?.mediaType !== "google" ||
+            portal.settings.advertising?.enabled === true) &&
+          (!c.starts_at || Date.parse(c.starts_at) <= now) &&
+          (!c.ends_at || Date.parse(c.ends_at) > now),
+      )
+      .map((c) =>
+        c.creative?.mediaType === "google"
+          ? {
+              ...c,
+              creative: {
+                ...c.creative,
+                googlePublisherId: portal.settings.advertising?.publisherId,
+              },
+            }
+          : c,
+      ),
     partners: results[3].data as Partner[],
   };
 }

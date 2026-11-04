@@ -379,6 +379,10 @@ test("Três composições independentes com mesma paleta e conteúdo; contato e 
   await contact
     .getByLabel("Autorizo o uso destes dados para responder minha mensagem.")
     .check();
+  if (await contact.locator('select[name="kind"]').count())
+    await contact
+      .getByLabel("Tipo de manifestação", { exact: true })
+      .selectOption("Outro");
   await contact.getByRole("button", { name: "Enviar mensagem" }).click();
   await expect(contact.getByRole("status")).toContainText(
     "Mensagem registrada.",
@@ -435,14 +439,12 @@ test("Três composições independentes com mesma paleta e conteúdo; contato e 
   await page
     .getByLabel("Organização do menu", { exact: true })
     .selectOption("custom");
-  const navigation = page
-    .locator("section.panel")
-    .filter({
-      has: page.getByRole("heading", {
-        name: "Menu de navegação",
-        exact: true,
-      }),
-    });
+  const navigation = page.locator("section.panel").filter({
+    has: page.getByRole("heading", {
+      name: "Menu de navegação",
+      exact: true,
+    }),
+  });
   await navigation
     .getByRole("button", { name: "+ Adicionar item ao menu", exact: true })
     .click();

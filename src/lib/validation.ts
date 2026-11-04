@@ -1,3 +1,4 @@
+import { advertisingSchema, adSlotSchema } from "./advertising.ts";
 import {
   experienceSchema,
   menuSchema,
@@ -35,6 +36,7 @@ export const linkSchema = z
     "Use URL HTTPS ou caminho local",
   );
 export const settingsSchema = z.object({
+  advertising: advertisingSchema.optional(),
   experience: experienceSchema.optional(),
   logo: imageSchema,
   favicon: imageSchema,
@@ -116,6 +118,7 @@ export const sectionsSchema = z
       ]),
       title: text(120),
       ...sectionStyleSchema,
+      adSlots: z.array(adSlotSchema).max(10).optional(),
       videoUrl: imageSchema
         .refine((value) => {
           if (!value) return true;

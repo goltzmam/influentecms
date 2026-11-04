@@ -281,9 +281,10 @@ function CreativeForm({
           <option value="image">Imagem com link</option>
           <option value="video">Vídeo com chamada</option>
           <option value="text">Conteúdo e chamada</option>
+          {campaign && <option value="google">Google AdSense</option>}
         </select>
       </label>
-      {creative.mediaType !== "text" && (
+      {creative.mediaType !== "text" && creative.mediaType !== "google" && (
         <MediaInput
           portalId={portalId}
           label={campaign ? "Imagem" : "Logotipo"}
@@ -305,6 +306,22 @@ function CreativeForm({
             placeholder="YouTube ou arquivo MP4/WebM"
             required
           />
+        </label>
+      )}
+      {creative.mediaType === "google" && (
+        <label>
+          Identificador do bloco Google
+          <input
+            aria-label="Identificador do bloco Google"
+            value={creative.googleSlot || ""}
+            onChange={(e) => edit("googleSlot", e.target.value.trim())}
+            inputMode="numeric"
+            required
+          />
+          <span className="field-hint">
+            A conta é a mesma configurada em Personalização → Google AdSense.
+            Escolha abaixo a página e a posição.
+          </span>
         </label>
       )}
       <label>
@@ -676,7 +693,7 @@ function CreativeForm({
       <div className="creative-live-preview">
         <span className="eyebrow">PRÉVIA DA PEÇA</span>
         {campaign ? (
-          <AdCreative campaign={preview} />
+          <AdCreative campaign={preview} preview />
         ) : (
           <PartnerCard partner={preview} />
         )}

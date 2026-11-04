@@ -1,3 +1,4 @@
+import {AdvertisingEditor} from "./advertising-editor";
 import type { Settings } from "@/lib/types";
 import { MediaInput } from "./media-input";
 import { SocialCardsEditor } from "./social-cards-editor";
@@ -10,6 +11,7 @@ export function AppearanceDetails({
 }) {
   return (
     <>
+      <AdvertisingEditor value={s.advertising}/>
       <section className="panel">
         <h2>Cores e assinatura visual</h2>
         <div className="form-columns">

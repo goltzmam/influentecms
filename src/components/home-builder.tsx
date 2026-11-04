@@ -1,9 +1,16 @@
 "use client";
+import { AdvertisingEditor } from "./advertising-editor";
+import { AdSlotEditor } from "./ad-slot-editor";
+import {
+  referenceAdSlots,
+  type AdSlot,
+  type Advertising,
+} from "@/lib/advertising";
 import { ExperienceEditor, type ExperienceTab } from "./experience-editor";
 import { MenuEditor } from "./menu-editor";
 import type { Experience, MenuItem } from "@/lib/experience";
-import {campaignMatches} from "@/lib/experience";
-import { useState, type DragEvent } from "react";
+import { campaignMatches } from "@/lib/experience";
+import { useState, useEffect, type DragEvent } from "react";
 import { referenceSections, presentationSettings } from "@/lib/presentation";
 import {
   DndContext,
@@ -90,6 +97,7 @@ function Block({
           Remover
         </button>
       </div>
+      <AdSlotEditor section={section} update={update} campaigns={campaigns} />
       <fieldset className="section-style-inspector" data-edit-control="title">
         <legend>Título desta seção</legend>
         <div className="form-columns">
@@ -522,6 +530,7 @@ function CanvasSection({
     <div
       ref={setNodeRef}
       className="canvas-section"
+      data-section-type={section.type}
       data-section-id={section.id}
       style={{
         transform: CSS.Transform.toString(transform),
@@ -548,16 +557,24 @@ function CanvasSection({
       <div
         onClick={(event) => {
           const target = event.target as HTMLElement;
+          if (
+            target
+              .closest(".canvas-section")
+              ?.getAttribute("data-section-id") !== section.id
+          )
+            return;
           if (target.closest("a")) event.preventDefault();
           if (
             !target.closest("button,input,select,textarea,summary,video,iframe")
           )
             onEdit(
-              target.closest(".block-title,.editoria-heading")
-                ? "title"
-                : target.closest("p,.editorial-text,.news-card,.daily-hero")
-                  ? "copy"
-                  : "background",
+              target.closest(".portal-ad-slot")
+                ? "ads"
+                : target.closest(".block-title,.editoria-heading")
+                  ? "title"
+                  : target.closest("p,.editorial-text,.news-card,.daily-hero")
+                    ? "copy"
+                    : "background",
             );
         }}
       >
@@ -604,6 +621,21 @@ export function HomeBuilder({
   const [template, setTemplate] = useState<Portal["template"]>(
     draftDesign?.template || portal.template,
   );
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    if (!fullscreen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]"))
+        setFullscreen(false);
+    };
+    document.addEventListener("keydown", close);
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener("keydown", close);
+    };
+  }, [fullscreen]);
   const [dropError, setDropError] = useState(""),
     [uploading, setUploading] = useState(false),
     [device, setDevice] = useState("desktop");
@@ -615,21 +647,41 @@ export function HomeBuilder({
     [menusMode, setMenusMode] = useState<"auto" | "custom">(
       baseDesign.menusMode || "auto",
     );
+  const [inspectorTab, setInspectorTab] = useState<"blocks" | "design" | "ads">(
+    "blocks",
+  );
+  const [selectedSection, setSelectedSection] = useState(initial[0]?.id || "");
+  const [advertising, setAdvertising] = useState<Advertising>(
+    baseDesign.advertising || {},
+  );
   function inspect(id: string, part = "background") {
-    const block = document.getElementById(`block-${id}`);
-    document
-      .querySelectorAll(".builder-block.is-inspecting")
-      .forEach((node) => node.classList.remove("is-inspecting"));
-    block?.classList.add("is-inspecting");
-    const control =
-      block?.querySelector(`[data-edit-control="${part}"]`) || block;
-    control?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setSelectedSection(id);
+    setInspectorTab("blocks");
+    requestAnimationFrame(() => {
+      const block = document.getElementById(`block-${id}`);
+      document
+        .querySelectorAll(".builder-block.is-inspecting")
+        .forEach((node) => node.classList.remove("is-inspecting"));
+      block?.classList.add("is-inspecting");
+      const control =
+        block?.querySelector(`[data-edit-control="${part}"]`) || block;
+      control?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
   }
-  const previewCampaigns=campaigns.filter(campaign=>campaignMatches(campaign.creative,{kind:'home'}));
+  const previewCampaigns = campaigns.filter((campaign) =>
+    campaignMatches(campaign.creative, { kind: "home" }),
+  );
   const previewPortal = {
     ...portal,
     template,
-    settings: { ...portal.settings, ...design, experience, menus, menusMode },
+    settings: {
+      ...portal.settings,
+      ...design,
+      advertising,
+      experience,
+      menus,
+      menusMode,
+    },
   };
   function add(
     type: Section["type"],
@@ -640,7 +692,16 @@ export function HomeBuilder({
       setDropError("Use até 30 seções por página.");
       return;
     }
-    const section = { id: crypto.randomUUID(), type, title: "", ...extra };
+    const id = crypto.randomUUID();
+    const section = {
+      id,
+      type,
+      title: "",
+      adSlots: referenceAdSlots(type, id),
+      ...extra,
+    };
+    setSelectedSection(section.id);
+    setInspectorTab("blocks");
     setSections((items) => {
       const index = before ? items.findIndex((s) => s.id === before) : -1;
       return index < 0
@@ -652,6 +713,68 @@ export function HomeBuilder({
     event.preventDefault();
     event.stopPropagation();
     setDropError("");
+    const adKind = event.dataTransfer.getData(
+      "application/x-influente-ad-kind",
+    );
+    const moved = event.dataTransfer.getData("application/x-influente-slot");
+    const zone = ((event.target as HTMLElement)
+      .closest("[data-ad-zone]")
+      ?.getAttribute("data-ad-zone") || "after") as AdSlot["zone"];
+    const beforeSlotId = (event.target as HTMLElement)
+      .closest("[data-ad-slot-id]")
+      ?.getAttribute("data-ad-slot-id");
+    const target = before || sections.at(-1)?.id;
+    if ((adKind || moved) && target) {
+      if (moved) {
+        try {
+          const source = JSON.parse(moved);
+          let slot: AdSlot | undefined;
+          for (const section of sections)
+            slot ||= section.adSlots?.find((s) => s.id === source.id);
+          if (slot) {
+            const placed = { ...slot, zone };
+            setSections((items) =>
+              items.map((s) => {
+                const next = (s.adSlots || []).filter((a) => a.id !== slot!.id);
+                if (s.id === target) {
+                  const index = next.findIndex((a) => a.id === beforeSlotId);
+                  next.splice(index < 0 ? next.length : index, 0, placed);
+                }
+                return { ...s, adSlots: next };
+              }),
+            );
+            inspect(target);
+          }
+        } catch {
+          setDropError("Não foi possível mover este espaço.");
+        }
+        return;
+      }
+      if (["advertising", "google", "sponsor"].includes(adKind)) {
+        setSections((items) =>
+          items.map((s) =>
+            s.id === target
+              ? {
+                  ...s,
+                  adSlots: [
+                    ...(s.adSlots || []),
+                    {
+                      id: crypto.randomUUID(),
+                      kind: adKind as AdSlot["kind"],
+                      zone,
+                      format: (adKind === "sponsor"
+                        ? "sponsor"
+                        : "rectangle") as AdSlot["format"],
+                    },
+                  ].slice(0, 10),
+                }
+              : s,
+          ),
+        );
+        inspect(target);
+        return;
+      }
+    }
     const file = event.dataTransfer.files[0];
     if (file) {
       setUploading(true);
@@ -688,9 +811,19 @@ export function HomeBuilder({
     )
       add(type as Section["type"], before);
   }
-  const [sections, setSections] = useState(
-    initial.length ? initial : referenceSections(categories, portal.template),
+  const [sections, setSections] = useState<Section[]>(
+    (initial.length
+      ? initial
+      : referenceSections(categories, portal.template)
+    ).map((s) => ({
+      ...s,
+      adSlots: s.adSlots ?? referenceAdSlots(s.type, s.id),
+    })),
   );
+  useEffect(() => {
+    if (!sections.some((s) => s.id === selectedSection))
+      setSelectedSection(sections[0]?.id || "");
+  }, [sections, selectedSection]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
@@ -717,9 +850,20 @@ export function HomeBuilder({
       collisionDetection={closestCenter}
       onDragEnd={move}
     >
-      <div className="homepage-editor">
+      <div
+        className={`homepage-editor ${fullscreen ? "builder-fullscreen" : ""}`}
+      >
         <section className="panel visual-design-bar">
-          <h2>Seu portal, do seu jeito</h2>
+          <div className="builder-heading-row">
+            <h2>Seu portal, do seu jeito</h2>
+            <button
+              type="button"
+              className="button-outline"
+              onClick={() => setFullscreen(!fullscreen)}
+            >
+              {fullscreen ? "Sair da tela cheia" : "Editar em tela cheia"}
+            </button>
+          </div>
           <p>
             Arraste blocos ou imagens para a página. Use Mover para organizar e
             Editar seção para configurar.
@@ -779,6 +923,59 @@ export function HomeBuilder({
           </p>
         )}
         {uploading && <p role="status">Enviando imagem…</p>}
+        <div className="ad-builder-palette">
+          <div>
+            <strong>Espaços de monetização</strong>
+            <span>
+              Arraste para antes, título, lateral ou depois de uma seção.
+            </span>
+          </div>
+          {(["advertising", "google", "sponsor"] as const).map((kind) => (
+            <button
+              type="button"
+              className={`slot-palette slot-${kind}`}
+              key={kind}
+              draggable
+              onDragStart={(event) =>
+                event.dataTransfer.setData(
+                  "application/x-influente-ad-kind",
+                  kind,
+                )
+              }
+              onClick={() => {
+                const id = selectedSection || sections[0]?.id;
+                if (id) {
+                  setSections((items) =>
+                    items.map((s) =>
+                      s.id === id
+                        ? {
+                            ...s,
+                            adSlots: [
+                              ...(s.adSlots || []),
+                              {
+                                id: crypto.randomUUID(),
+                                kind,
+                                zone: kind === "sponsor" ? "heading" : "after",
+                                format:
+                                  kind === "sponsor" ? "sponsor" : "rectangle",
+                              } as AdSlot,
+                            ].slice(0, 10),
+                          }
+                        : s,
+                    ),
+                  );
+                  inspect(id);
+                }
+              }}
+            >
+              {kind === "advertising"
+                ? "Publicidade"
+                : kind === "google"
+                  ? "Google Ads"
+                  : "Patrocinador"}
+            </button>
+          ))}
+        </div>
         <div className="builder-toolbar">
           {(
             [
@@ -831,48 +1028,134 @@ export function HomeBuilder({
                   "Substituir a composição no editor pela composição editorial? A versão pública só muda ao clicar Publicar homepage.",
                 )
               )
-                setSections(referenceSections(categories, template));
+                setSections(
+                  referenceSections(categories, template).map((s) => ({
+                    ...s,
+                    adSlots: referenceAdSlots(s.type, s.id),
+                  })),
+                );
             }}
           >
             Usar composição editorial
           </button>
         </div>
         <div className="editor-grid">
-          <form action={saveHomepage}>
-            <ExperienceEditor
-              portalId={portalId}
-              value={experience}
-              onChange={setExperience}
-              tab={experienceTab}
-              onTabChange={setExperienceTab}
-              name=""
-            />
-            {experienceTab === "navigation" && (
-              <section className="panel">
-                <h3>Itens e submenus</h3>
-                <label>
-                  Organização do menu
-                  <select
-                    value={menusMode}
-                    onChange={(e) =>
-                      setMenusMode(e.target.value as "auto" | "custom")
+          <form action={saveHomepage} className="builder-inspector">
+            <div
+              className="builder-inspector-tabs"
+              role="tablist"
+              aria-label="Ferramentas do editor"
+            >
+              {(["blocks", "design", "ads"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={inspectorTab === t}
+                  onClick={() => setInspectorTab(t)}
+                >
+                  {t === "blocks"
+                    ? "Seções"
+                    : t === "design"
+                      ? "Identidade"
+                      : "Monetização"}
+                </button>
+              ))}
+            </div>
+            <div hidden={inspectorTab !== "ads"}>
+              <AdvertisingEditor
+                name=""
+                value={advertising}
+                onChange={setAdvertising}
+              />
+            </div>
+            <div hidden={inspectorTab !== "design"}>
+              <ExperienceEditor
+                portalId={portalId}
+                value={experience}
+                onChange={setExperience}
+                tab={experienceTab}
+                onTabChange={setExperienceTab}
+                name=""
+              />
+              {experienceTab === "navigation" && (
+                <section className="panel">
+                  <h3>Itens e submenus</h3>
+                  <label>
+                    Organização do menu
+                    <select
+                      value={menusMode}
+                      onChange={(e) =>
+                        setMenusMode(e.target.value as "auto" | "custom")
+                      }
+                    >
+                      <option value="auto">
+                        Categorias e links escolhidos
+                      </option>
+                      <option value="custom">
+                        Somente os itens que eu criar
+                      </option>
+                    </select>
+                  </label>
+                  <MenuEditor name="" value={menus} onChange={setMenus} />
+                </section>
+              )}
+            </div>
+            <div
+              className="section-navigator"
+              hidden={inspectorTab !== "blocks"}
+            >
+              <p className="eyebrow">ESTRUTURA DA PÁGINA</p>
+              {sections.map((s, i) => (
+                <div
+                  key={s.id}
+                  className={selectedSection === s.id ? "selected" : ""}
+                >
+                  <button type="button" onClick={() => inspect(s.id)}>
+                    {i + 1}.{" "}
+                    {s.title ||
+                      {
+                        lead: "Capa",
+                        latest: "Recentes",
+                        category: "Editoria",
+                        banner: "Anúncio",
+                        sponsored: "Publieditorial",
+                        text: "Texto",
+                        image: "Imagem",
+                        video: "Vídeo",
+                        featured: "Destaques",
+                      }[s.type]}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Subir seção ${i + 1}`}
+                    disabled={i === 0}
+                    onClick={() =>
+                      setSections((items) => arrayMove(items, i, i - 1))
                     }
                   >
-                    <option value="auto">Categorias e links escolhidos</option>
-                    <option value="custom">
-                      Somente os itens que eu criar
-                    </option>
-                  </select>
-                </label>
-                <MenuEditor name="" value={menus} onChange={setMenus} />
-              </section>
-            )}
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Descer seção ${i + 1}`}
+                    disabled={i === sections.length - 1}
+                    onClick={() =>
+                      setSections((items) => arrayMove(items, i, i + 1))
+                    }
+                  >
+                    ↓
+                  </button>
+                </div>
+              ))}
+            </div>
             <input type="hidden" name="portal_id" value={portalId} />
             <input
               type="hidden"
               name="design"
               value={JSON.stringify({
                 ...design,
+                advertising,
                 experience,
                 menus,
                 menusMode,
@@ -890,22 +1173,29 @@ export function HomeBuilder({
               strategy={verticalListSortingStrategy}
             >
               {sections.map((section) => (
-                <Block
-                  campaigns={campaigns}
+                <div
                   key={section.id}
-                  section={section}
-                  portalId={portalId}
-                  categories={categories}
-                  articles={articles}
-                  update={(s) =>
-                    setSections(
-                      sections.map((item) => (item.id === s.id ? s : item)),
-                    )
+                  hidden={
+                    inspectorTab !== "blocks" || selectedSection !== section.id
                   }
-                  remove={() =>
-                    setSections(sections.filter((s) => s.id !== section.id))
-                  }
-                />
+                >
+                  <Block
+                    campaigns={campaigns}
+                    key={section.id}
+                    section={section}
+                    portalId={portalId}
+                    categories={categories}
+                    articles={articles}
+                    update={(s) =>
+                      setSections(
+                        sections.map((item) => (item.id === s.id ? s : item)),
+                      )
+                    }
+                    remove={() =>
+                      setSections(sections.filter((s) => s.id !== section.id))
+                    }
+                  />
+                </div>
               ))}
             </SortableContext>
 
@@ -968,6 +1258,7 @@ export function HomeBuilder({
                   )
                 ) {
                   setExperienceTab(region);
+                  setInspectorTab("design");
                   document
                     .getElementById("portal-experience-controls")
                     ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -978,37 +1269,57 @@ export function HomeBuilder({
               onDrop={(event) => void drop(event)}
             >
               <NewsShell
-                portal={previewPortal}
+                portal={{ ...previewPortal, home_published: sections }}
                 categories={categories}
                 campaigns={previewCampaigns}
                 partners={partners}
                 basePath={`/p/${portal.slug}`}
                 preview
               >
-                <div className="canvas-grid">
-                  <SortableContext
-                    items={sections.map((s) => `canvas-${s.id}`)}
-                    strategy={rectSortingStrategy}
-                  >
-                    {sections.map((section) => (
+                <SortableContext
+                  items={sections.map((s) => `canvas-${s.id}`)}
+                  strategy={rectSortingStrategy}
+                >
+                  <Homepage
+                    portal={previewPortal}
+                    articles={articles}
+                    categories={categories}
+                    campaigns={previewCampaigns}
+                    basePath={`/p/${portal.slug}`}
+                    sections={sections}
+                    preview
+                    frame={(section, children) => (
                       <CanvasSection
                         key={section.id}
                         section={section}
                         onDrop={(event, id) => void drop(event, id)}
                         onEdit={(part) => inspect(section.id, part)}
                       >
-                        <Homepage
-                          portal={previewPortal}
-                          articles={articles}
-                          categories={categories}
-                          campaigns={previewCampaigns}
-                          basePath={`/p/${portal.slug}`}
-                          sections={[{ ...section, layoutWidth: "full" }]}
-                        />
+                        {children}
+                        <div className="canvas-ad-targets">
+                          {(
+                            ["before", "heading", "sidebar", "after"] as const
+                          ).map((zone) => (
+                            <div
+                              key={zone}
+                              data-ad-zone={zone}
+                              className="canvas-ad-target"
+                            >
+                              {zone === "before"
+                                ? "Antes"
+                                : zone === "heading"
+                                  ? "No título"
+                                  : zone === "sidebar"
+                                    ? "Lateral"
+                                    : "Depois"}{" "}
+                              · solte um anúncio
+                            </div>
+                          ))}
+                        </div>
                       </CanvasSection>
-                    ))}
-                  </SortableContext>
-                </div>
+                    )}
+                  />
+                </SortableContext>
                 <div className="canvas-drop-end">
                   Solte uma imagem ou um bloco aqui
                 </div>

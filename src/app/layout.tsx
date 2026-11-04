@@ -3,6 +3,7 @@ import "./globals.css";
 import "./portal-reference.css";
 import "./portal-experience.css";
 import "./portal-themes.css";
+import "./portal-advertising.css";
 export const metadata: Metadata = {
   title: "Influente CMS",
   description: "Central editorial privada da Influente Comunicação",

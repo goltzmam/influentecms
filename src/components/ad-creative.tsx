@@ -1,3 +1,4 @@
+import { GoogleAd } from "./google-ad";
 import { ArrowUpRight } from "lucide-react";
 import type { Campaign, Partner } from "@/lib/types";
 import { youtubeEmbed } from "@/lib/presentation";
@@ -49,7 +50,15 @@ const formats: Record<string, [number, number]> = {
   square: [300, 300],
   native: [600, 200],
 };
-export function AdCreative({ campaign }: { campaign: Campaign }) {
+export function AdCreative({
+  campaign,
+  preview = false,
+  disclosure = true,
+}: {
+  campaign: Campaign;
+  preview?: boolean;
+  disclosure?: boolean;
+}) {
   const c = campaign.creative || {},
     size = formats[c.format || ""] || [c.width || 970, c.height || 250];
   const custom = c.format && c.format !== "auto";
@@ -67,14 +76,25 @@ export function AdCreative({ campaign }: { campaign: Campaign }) {
         borderRadius: c.radius ?? 12,
       }}
     >
-      <span className="advert-disclosure">Publicidade</span>
+      {disclosure && <span className="advert-disclosure">Publicidade</span>}
       <div
         className="ad-creative-media"
         style={{
           aspectRatio: custom ? `${size[0]}/${size[1]}` : undefined,
         }}
       >
-        {c.mediaType === "text" ? (
+        {c.mediaType === "google" ? (
+          preview ? (
+            <div className="ad-slot-placeholder google-campaign-placeholder">
+              Google Ads · prévia
+            </div>
+          ) : (
+            <GoogleAd
+              publisherId={c.googlePublisherId || ""}
+              slot={c.googleSlot}
+            />
+          )
+        ) : c.mediaType === "text" ? (
           <div className="ad-native-content">
             <strong>{campaign.name}</strong>
             <p>{c.description}</p>

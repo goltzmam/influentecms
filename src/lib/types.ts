@@ -1,5 +1,7 @@
+import type { Advertising, AdSlot } from "./advertising";
 import type { Experience, MenuItem, Creative } from "./experience";
 export type Settings = {
+  advertising?: Advertising;
   logo?: string;
   favicon?: string;
   color?: string;
@@ -37,6 +39,7 @@ export type Settings = {
   ogImage?: string;
 };
 export type Section = {
+  adSlots?: AdSlot[];
   id: string;
   type:
     | "lead"
