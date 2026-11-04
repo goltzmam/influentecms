@@ -23,8 +23,11 @@ const response = await fetch(endpoint, {
   headers,
   body: JSON.stringify(patch),
 });
-if (!response.ok)
+if (!response.ok) {
+  const detail = (await response.text()).slice(0, 1200);
+  console.log(JSON.stringify({check:"Access email configuration",status:"FAIL",http:response.status,validation:detail}));
   throw new Error(`Email configuration HTTP ${response.status}`);
+}
 const checked = await fetch(endpoint, { headers }),
   config = await checked.json();
 if (
