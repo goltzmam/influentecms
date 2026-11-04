@@ -1,3 +1,4 @@
+import {readerMessage} from "@/lib/messages";
 import {requireAdmin} from "@/lib/auth";
 import Link from "next/link";
 import { createPortal } from "../actions";
@@ -18,7 +19,7 @@ export default async function NewPortal({
       </p>
       {notice && (
         <p className="notice" role="status">
-          {notice}
+          {readerMessage(notice)}
         </p>
       )}
       <div className="panel ai-new-banner"><strong>Prefere começar com uma ideia?</strong><p className="muted">Descreva seu portal e deixe a FLUE montar uma estrutura editável.</p><Link className="button button-outline" href="/painel/ia">Criar portal com IA →</Link></div>

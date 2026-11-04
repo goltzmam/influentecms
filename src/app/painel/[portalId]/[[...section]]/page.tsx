@@ -1,3 +1,4 @@
+import {readerMessage} from "@/lib/messages";
 import {EditorInviteLink} from "@/components/editor-invite-link";
 import { inviteEditor, removeEditor } from "../../team-actions";
 import Link from "next/link";
@@ -1033,7 +1034,7 @@ export default async function PortalAdmin({
       </div>
       {query.notice && (
         <p className="notice" role="status">
-          {query.notice}
+          {readerMessage(query.notice)}
         </p>
       )}
       {body}
