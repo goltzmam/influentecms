@@ -17,6 +17,7 @@ async function call(
   body: unknown,
   fetcher: Fetcher,
   signal?: AbortSignal,
+  attempt = 0,
 ) {
   let response: Response;
   try {
@@ -36,6 +37,11 @@ async function call(
       "provider_timeout",
       "O Gemini demorou a responder. Tente novamente em alguns instantes.",
     );
+  }
+  if ([500,502,503,504].includes(response.status) && attempt < 2 && !signal?.aborted) {
+    await response.body?.cancel();
+    await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+    return call(model,key,body,fetcher,signal,attempt+1);
   }
   if (!response.ok) {
     if ([401, 403].includes(response.status))
@@ -96,6 +102,7 @@ export async function generateBlueprint(
       "provider_model",
       "O nome do modelo Gemini configurado é inválido.",
     );
+  const signal = options.signal ? AbortSignal.any([options.signal,AbortSignal.timeout(240000)]) : AbortSignal.timeout(240000);
   const fetcher = options.fetcher || fetch;
   const warnings: string[] = [];
   let referenceNotes = "";
@@ -129,7 +136,7 @@ export async function generateBlueprint(
           generationConfig: { maxOutputTokens: 3500 },
         },
         fetcher,
-        options.signal,
+        signal,
       );
       referenceNotes = context.text.slice(0, 16000);
       const metadata = context.candidate.urlContextMetadata?.urlMetadata || [];
@@ -188,7 +195,7 @@ export async function generateBlueprint(
       },
     },
     fetcher,
-    options.signal,
+    signal,
   );
   let plan: AiBlueprint;
   try {

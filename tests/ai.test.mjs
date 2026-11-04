@@ -312,3 +312,9 @@ test("Criação IA é atômica, idempotente, isolada e respeita rascunhos e cota
     await db.close();
   }
 });
+
+test('Gemini repete sobrecarga transitória antes de falhar',async()=>{
+ let calls=0;
+ const result=await generateBlueprint({brief:'Crie um portal editorial chamado SaudeFIT.',references:[]},{key:'test-key-not-a-secret',fetcher:async()=>{calls++;return calls===1?new Response('{}',{status:503}):Response.json({candidates:[{content:{parts:[{text:JSON.stringify(blueprint)}]}}]});}});
+ assert.equal(calls,2);assert.equal(result.plan.name,'SaudeFIT');
+});
