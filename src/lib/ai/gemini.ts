@@ -2,6 +2,7 @@ import { z } from "zod";
 import { blueprintSchema, blueprintShape, type AiBlueprint } from "./schema.ts";
 export const defaultModel = "gemini-3.6-flash";
 export class AiError extends Error {
+  diagnostic?: {status:number;message:string};
   code: string;
   constructor(code: string, message: string) {
     super(message);
@@ -52,10 +53,13 @@ async function call(
         "provider_model",
         "O modelo Gemini configurado não está disponível para esta chave.",
       );
-    throw new AiError(
+    const error = new AiError(
       "provider_error",
       "O Gemini não conseguiu concluir a geração. Tente novamente mais tarde.",
     );
+    const details = await response.json().catch(() => null);
+    error.diagnostic = {status:response.status,message:String(details?.error?.message || 'Sem detalhes').replaceAll(key,'[REDACTED]').replace(/AIza[\w-]+/g,'[REDACTED]').slice(0,1800)};
+    throw error;
   }
   const json = await response.json();
   const candidate = json.candidates?.[0];
