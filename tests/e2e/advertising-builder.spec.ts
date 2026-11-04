@@ -361,6 +361,32 @@ test("Editor visual: três papéis, drag and drop, prévia real, persistência e
   await expect(
     page.getByText("Campanha salva.", { exact: true }),
   ).toBeVisible();
+  const side = await admin
+    .from("campaigns")
+    .insert({
+      organization_id: org,
+      portal_id: portal,
+      name: "Google na editoria",
+      image_url: "",
+      link: "",
+      position: "sidebar",
+      active: true,
+      creative: {
+        mediaType: "google",
+        format: "rectangle",
+        googleSlot: "5555555555",
+        pageKinds: ["category", "search", "page"],
+      },
+    });
+  if (side.error) throw side.error;
+  await page.goto(`/p/${slug}/categoria/politica`);
+  await expect(
+    page.locator('.archive-ad-rail ins[data-ad-slot="5555555555"]'),
+  ).toHaveCount(1);
+  await page.goto(`/p/${slug}/busca?q=editorial`);
+  await expect(
+    page.locator('.archive-ad-rail ins[data-ad-slot="5555555555"]'),
+  ).toHaveCount(1);
   await page.goto(`/p/${slug}/noticia/historia-0`);
   await expect(
     page.locator('.article-body ins[data-ad-slot="9876543210"]'),

@@ -202,13 +202,18 @@ export default async function PublicPage({ params, searchParams }: Props) {
       .single();
     if (error || !page) notFound();
     body = (
-      <article className="public-article institutional">
-        <h1>{page.title}</h1>
-        <div
-          className="article-body"
-          dangerouslySetInnerHTML={{ __html: cleanHtml(page.content) }}
-        />
-      </article>
+      <div className="archive-layout institutional-layout">
+        <article className="public-article institutional">
+          <h1>{page.title}</h1>
+          <div
+            className="article-body"
+            dangerouslySetInnerHTML={{ __html: cleanHtml(page.content) }}
+          />
+        </article>
+        <aside className="archive-ad-rail">
+          <Campaigns campaigns={data.campaigns} position="sidebar" />
+        </aside>
+      </div>
     );
   } else if (
     (segments.length === 2 && segments[0] === "categoria") ||
@@ -243,16 +248,26 @@ export default async function PublicPage({ params, searchParams }: Props) {
           <h1>{category ? category.name : `Busca: ${search}`}</h1>
           <p>{count || 0} notícias</p>
         </div>
-        {articles?.length ? (
-          <NewsGrid
-            campaigns={data.campaigns}
-            articles={articles as Article[]}
-            categories={data.categories}
-            basePath={basePath}
-          />
-        ) : (
-          <div className="public-empty">Nenhuma notícia encontrada.</div>
-        )}
+        <div className="archive-layout">
+          <div>
+            {articles?.length ? (
+              <NewsGrid
+                campaigns={data.campaigns}
+                articles={articles as Article[]}
+                categories={data.categories}
+                basePath={basePath}
+              />
+            ) : (
+              <div className="public-empty">Nenhuma notícia encontrada.</div>
+            )}
+          </div>
+          <aside className="archive-ad-rail">
+            {category && (
+              <Campaigns campaigns={data.campaigns} position="category" />
+            )}
+            <Campaigns campaigns={data.campaigns} position="sidebar" />
+          </aside>
+        </div>
         <nav className="pagination">
           {page > 1 && (
             <Link

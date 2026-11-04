@@ -713,3 +713,24 @@
   top: 12px;
   max-height: calc(100vh - 24px);
 }
+.reference-site .archive-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+.reference-site .archive-layout:has(> .archive-ad-rail .public-ad) {
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+}
+.reference-site .archive-ad-rail {
+  min-width: 0;
+}
+.reference-site .archive-layout > .public-article {
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 760px) {
+  .reference-site .archive-layout:has(> .archive-ad-rail .public-ad) {
+    grid-template-columns: 1fr;
+  }
+}
