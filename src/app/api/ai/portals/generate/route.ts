@@ -14,7 +14,7 @@ export async function POST(request: Request) {
         400,
         input.error.issues[0]?.message || "Confira a descrição e os links.",
       );
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY)
+    if (!process.env.GEMINI_API_KEY && !process.env.GEMINI_API && !process.env.GOOGLE_API_KEY)
       throw new ApiFailure(
         503,
         "Configure GEMINI_API_KEY na Vercel para ativar o criador de portais.",

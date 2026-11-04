@@ -10,6 +10,7 @@ export default async function Settings() {
     "VERCEL_PROJECT_ID",
     "SUPABASE_SERVICE_ROLE_KEY",
     "GEMINI_API_KEY",
+    "GEMINI_API",
   ];
   return (
     <>

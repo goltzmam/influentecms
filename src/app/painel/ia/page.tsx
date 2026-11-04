@@ -12,7 +12,7 @@ export default async function AiStudioPage() {
   return (
     <AiPortalStudio
       configured={Boolean(
-        process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+        process.env.GEMINI_API_KEY || process.env.GEMINI_API || process.env.GOOGLE_API_KEY,
       )}
       model={process.env.GEMINI_MODEL || defaultModel}
       history={

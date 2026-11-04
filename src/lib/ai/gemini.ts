@@ -80,7 +80,7 @@ export async function generateBlueprint(
   } = {},
 ) {
   const key =
-    options.key || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    options.key || process.env.GEMINI_API_KEY || process.env.GEMINI_API || process.env.GOOGLE_API_KEY;
   if (!key)
     throw new AiError(
       "not_configured",
