@@ -1,3 +1,8 @@
+import {
+  experienceSchema,
+  menuSchema,
+  sectionStyleSchema,
+} from "./experience.ts";
 import { z } from "zod";
 const text = (max: number) => z.string().trim().max(max);
 export const slugSchema = z
@@ -30,6 +35,7 @@ export const linkSchema = z
     "Use URL HTTPS ou caminho local",
   );
 export const settingsSchema = z.object({
+  experience: experienceSchema.optional(),
   logo: imageSchema,
   favicon: imageSchema,
   color: z.string().regex(/^#[0-9a-f]{6}$/i),
@@ -38,7 +44,7 @@ export const settingsSchema = z.object({
   footer: text(1000),
   header: text(100),
   socials: z.array(z.object({ label: text(60), url: linkSchema })).max(12),
-  menus: z.array(z.object({ label: text(60), url: linkSchema })).max(15),
+  menus: z.array(menuSchema).max(15),
   menusMode: z.enum(["auto", "custom"]).optional(),
   accentColor: z
     .string()
@@ -109,6 +115,7 @@ export const sectionsSchema = z
         "video",
       ]),
       title: text(120),
+      ...sectionStyleSchema,
       videoUrl: imageSchema
         .refine((value) => {
           if (!value) return true;

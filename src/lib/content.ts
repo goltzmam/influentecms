@@ -70,3 +70,23 @@ export function isLive(
     new Date(publishAt).getTime() <= now
   );
 }
+
+// Split only at balanced top-level elements, keeping sanitized markup intact.
+export function splitArticleContent(value: string): [string, string] {
+  const html = cleanHtml(value),
+    boundaries: number[] = [];
+  let depth = 0;
+  const voids = new Set(["br", "hr", "img"]);
+  for (const match of html.matchAll(/<\/?([a-z0-9]+)\b[^>]*>/gi)) {
+    const tag = match[1].toLowerCase();
+    if (voids.has(tag)) continue;
+    if (match[0].startsWith("</")) {
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) boundaries.push(match.index + match[0].length);
+    } else depth++;
+  }
+  const point =
+    boundaries[Math.max(0, Math.floor(boundaries.length / 2) - 1)] ||
+    html.length;
+  return [html.slice(0, point), html.slice(point)];
+}

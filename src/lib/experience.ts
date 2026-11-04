@@ -1,0 +1,224 @@
+import { z } from "zod";
+const hex = z.string().regex(/^#[0-9a-f]{6}$/i);
+const text = (n: number) => z.string().trim().max(n);
+const url = z
+  .string()
+  .max(2000)
+  .refine(
+    (v) =>
+      !v ||
+      (v.startsWith("/") && !v.startsWith("//")) ||
+      v.startsWith("https://"),
+    "Use um endereço HTTPS ou uma página do portal.",
+  );
+const image = z
+  .string()
+  .max(2000)
+  .refine(
+    (v) =>
+      !v ||
+      v.startsWith("https://") ||
+      /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(v),
+    "Use uma imagem segura.",
+  );
+export const videoUrl = z
+  .string()
+  .max(2000)
+  .refine((v) => {
+    if (!v) return true;
+    try {
+      const u = new URL(v);
+      return (
+        u.protocol === "https:" &&
+        ([
+          "youtube.com",
+          "www.youtube.com",
+          "youtu.be",
+          "www.youtube-nocookie.com",
+        ].includes(u.hostname) ||
+          /\.(mp4|webm)$/i.test(u.pathname))
+      );
+    } catch {
+      return false;
+    }
+  }, "Use um vídeo do YouTube ou um arquivo MP4/WebM seguro.");
+const leaf = z.object({
+  label: text(80).min(1, "Dê um nome a cada item do menu."),
+  url,
+});
+const branch = leaf.extend({ children: z.array(leaf).max(12).optional() });
+export const menuSchema = leaf.extend({
+  children: z.array(branch).max(12).optional(),
+});
+export type MenuItem = z.infer<typeof menuSchema>;
+export const experienceSchema = z
+  .object({
+    navigation: z
+      .object({
+        customColors: z.boolean().optional(),
+        layout: z
+          .enum(["horizontal", "burger", "sidebar", "hybrid"])
+          .optional(),
+        background: hex.optional(),
+        color: hex.optional(),
+        accent: hex.optional(),
+        width: z.number().int().min(240).max(500).optional(),
+        logoAlign: z.enum(["left", "center"]).optional(),
+        sticky: z.boolean().optional(),
+      })
+      .optional(),
+    contact: z
+      .object({
+        mode: z.enum(["inline", "compact", "drawer", "hidden"]).optional(),
+        maxWidth: z.number().int().min(280).max(1200).optional(),
+        columns: z.enum(["one", "two"]).optional(),
+        background: hex.optional(),
+        color: hex.optional(),
+        buttonColor: hex.optional(),
+        radius: z.number().int().min(0).max(40).optional(),
+        padding: z.number().int().min(8).max(64).optional(),
+        messageRows: z.number().int().min(2).max(12).optional(),
+        buttonLabel: text(80).optional(),
+        intro: text(400).optional(),
+        nameLabel: text(80).optional(),
+        emailLabel: text(80).optional(),
+        phoneLabel: text(80).optional(),
+        subjectLabel: text(80).optional(),
+        messageLabel: text(80).optional(),
+        messagePlaceholder: text(300).optional(),
+        consentText: text(500).optional(),
+        fields: z
+          .array(
+            z.enum(["address", "neighborhood", "phone", "subject", "kind"]),
+          )
+          .max(5)
+          .optional(),
+      })
+      .optional(),
+    footer: z
+      .object({
+        layout: z.enum(["columns", "centered", "minimal"]).optional(),
+        background: hex.optional(),
+        color: hex.optional(),
+        columns: z.number().int().min(1).max(4).optional(),
+        logo: image.optional(),
+        showLogo: z.boolean().optional(),
+        showMenu: z.boolean().optional(),
+        showCommercial: z.boolean().optional(),
+        showSocials: z.boolean().optional(),
+        showSearch: z.boolean().optional(),
+        showRss: z.boolean().optional(),
+        copyright: text(300).optional(),
+        menus: z.array(menuSchema).max(15).optional(),
+        advertImage: image.optional(),
+        advertVideo: videoUrl.optional(),
+        advertLink: url.optional(),
+        advertTitle: text(120).optional(),
+        advertBackground: hex.optional(),
+        advertColor: hex.optional(),
+      })
+      .optional(),
+    partners: z
+      .object({
+        title: text(100).optional(),
+        subtitle: text(300).optional(),
+        layout: z.enum(["logos", "cards", "showcase"]).optional(),
+        columns: z.number().int().min(2).max(6).optional(),
+        background: hex.optional(),
+        color: hex.optional(),
+        cardBackground: hex.optional(),
+        radius: z.number().int().min(0).max(40).optional(),
+        imageFit: z.enum(["contain", "cover"]).optional(),
+        showNames: z.boolean().optional(),
+      })
+      .optional(),
+  })
+  .default({});
+export type Experience = z.infer<typeof experienceSchema>;
+export type PageContext = {
+  kind: "home" | "article" | "category" | "page" | "search";
+  slug?: string;
+  categoryId?: string;
+};
+export const creativeSchema = z
+  .object({
+    mediaType: z.enum(["image", "video", "text"]).default("image"),
+    videoUrl: videoUrl.optional(),
+    description: text(1000).optional(),
+    cta: text(80).optional(),
+    alt: text(300).optional(),
+    format: z
+      .enum([
+        "auto",
+        "billboard",
+        "leaderboard",
+        "rectangle",
+        "skyscraper",
+        "square",
+        "native",
+        "custom",
+      ])
+      .default("auto"),
+    width: z.number().int().min(100).max(2500).optional(),
+    height: z.number().int().min(50).max(2000).optional(),
+    fit: z.enum(["contain", "cover"]).optional(),
+    align: z.enum(["left", "center", "right"]).optional(),
+    background: hex.optional(),
+    color: hex.optional(),
+    radius: z.number().int().min(0).max(40).optional(),
+    pageKinds: z
+      .array(z.enum(["home", "article", "category", "page", "search"]))
+      .max(5)
+      .optional(),
+    pageSlugs: z.array(text(120)).max(30).optional(),
+    categoryIds: z.array(z.uuid()).max(30).optional(),
+    sectionIds: z.array(z.uuid()).max(30).optional(),
+    sectionPlacement: z.enum(["before", "after"]).optional(),
+    device: z.enum(["all", "desktop", "mobile"]).optional(),
+    repeatEvery: z.number().int().min(0).max(20).optional(),
+    order: z.number().int().min(0).max(999).optional(),
+  })
+  .default({ mediaType: "image", format: "auto" });
+export type Creative = z.infer<typeof creativeSchema>;
+export const sectionStyleSchema = {
+  titleColor: hex.optional(),
+  titleBackground: hex.optional(),
+  copyColor: hex.optional(),
+  cardBackground: hex.optional(),
+  titleSize: z.number().int().min(14).max(72).optional(),
+  copySize: z.number().int().min(12).max(36).optional(),
+  radius: z.number().int().min(0).max(40).optional(),
+  align: z.enum(["left", "center", "right"]).optional(),
+};
+export function campaignMatches(
+  creative: Partial<Creative> | undefined,
+  context: PageContext,
+) {
+  if (!creative) return true;
+  if (creative.pageKinds?.length && !creative.pageKinds.includes(context.kind))
+    return false;
+  const prefix =
+    context.kind === "article"
+      ? "noticia"
+      : context.kind === "page"
+        ? "pagina"
+        : context.kind === "category"
+          ? "categoria"
+          : context.kind === "search"
+            ? "busca"
+            : "";
+  if (
+    creative.pageSlugs?.length &&
+    !creative.pageSlugs.includes(context.slug || "") &&
+    !creative.pageSlugs.includes(
+      prefix ? `/${prefix}/${context.slug || ""}` : "/",
+    )
+  )
+    return false;
+  if (
+    creative.categoryIds?.length &&
+    !creative.categoryIds.includes(context.categoryId || "")
+  )
+    return false;
+  return true;
+}

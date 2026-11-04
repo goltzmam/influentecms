@@ -124,6 +124,10 @@ export function AiPortalStudio({
 }) {
   const router = useRouter();
   const abort = useRef<AbortController | null>(null);
+  const [requireReferences, setRequireReferences] = useState(true);
+  const [referenceImages, setReferenceImages] = useState<
+    { mimeType: string; data: string; name: string }[]
+  >([]);
   const [brief, setBrief] = useState(""),
     [links, setLinks] = useState(""),
     [busy, setBusy] = useState(false),
@@ -174,7 +178,15 @@ export function AiPortalStudio({
       const response = await fetch("/api/ai/portals/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brief, references }),
+        body: JSON.stringify({
+          brief,
+          references,
+          requireReferences,
+          referenceImages: referenceImages.map(({ mimeType, data }) => ({
+            mimeType,
+            data,
+          })),
+        }),
         signal: abort.current.signal,
       });
       const data = await response.json().catch(() => {
@@ -210,6 +222,7 @@ export function AiPortalStudio({
       }
       if (data.status === "failed") {
         setResult(null);
+        setReferenceImages([]);
         setBrief(data.brief || "");
         setLinks((data.reference_urls || []).join("\n"));
         return;
@@ -291,13 +304,14 @@ export function AiPortalStudio({
       </div>
       {!configured && (
         <div className="notice" role="status">
-          A FLUE está temporariamente indisponível. Tente novamente em instantes.{" "}
-          <Link href="/painel/configuracoes">Ver integrações →</Link>
+          A FLUE está temporariamente indisponível. Tente novamente em
+          instantes. <Link href="/painel/configuracoes">Ver integrações →</Link>
         </div>
       )}
       {!migrationReady && (
         <div className="notice" role="alert">
-          O Estúdio FLUE está recebendo uma atualização. Tente novamente em instantes.
+          O Estúdio FLUE está recebendo uma atualização. Tente novamente em
+          instantes.
         </div>
       )}
       {error && (
@@ -341,6 +355,104 @@ export function AiPortalStudio({
               placeholder="https://portal-referencia.com.br"
               disabled={busy}
             />
+            <label className="reference-image-upload">
+              Capturas de tela da referência
+              <input
+                aria-label="Imagens de referência"
+                type="file"
+                multiple
+                accept="image/png,image/jpeg,image/webp"
+                disabled={busy}
+                onChange={async (event) => {
+                  const files = Array.from(event.target.files || []);
+                  if (files.length + referenceImages.length > 3) {
+                    setError("Use até 3 imagens de referência.");
+                    return;
+                  }
+                  if (
+                    files.some(
+                      (file) =>
+                        file.size > 1048576 ||
+                        !["image/png", "image/jpeg", "image/webp"].includes(
+                          file.type,
+                        ),
+                    )
+                  ) {
+                    setError("Use imagens PNG, JPG ou WebP de até 1 MB cada.");
+                    return;
+                  }
+                  const loaded = await Promise.all(
+                    files.map(
+                      (file) =>
+                        new Promise<{
+                          mimeType: string;
+                          data: string;
+                          name: string;
+                        }>((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onload = () =>
+                            resolve({
+                              mimeType: file.type,
+                              data: String(reader.result).split(",")[1],
+                              name: file.name,
+                            });
+                          reader.onerror = () =>
+                            reject(
+                              new Error("Não foi possível abrir uma imagem."),
+                            );
+                          reader.readAsDataURL(file);
+                        }),
+                    ),
+                  ).catch(() => null);
+                  if (!loaded) {
+                    setError(
+                      "Não foi possível abrir as imagens. Tente novamente.",
+                    );
+                    return;
+                  }
+                  setReferenceImages((current) => [...current, ...loaded]);
+                  event.target.value = "";
+                }}
+              />
+              <small>
+                Até 3 imagens de 1 MB. Útil para menus, rodapés e sites que
+                bloqueiam leitura por link.
+              </small>
+            </label>
+            <div className="reference-image-list">
+              {referenceImages.map((image, index) => (
+                <div key={index}>
+                  <img
+                    src={`data:${image.mimeType};base64,${image.data}`}
+                    alt={`Referência ${index + 1}`}
+                  />
+                  <span>{image.name}</span>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={`Remover referência ${index + 1}`}
+                    onClick={() =>
+                      setReferenceImages((current) =>
+                        current.filter((_, i) => i !== index),
+                      )
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            <label className="check-label">
+              <input
+                type="checkbox"
+                checked={!requireReferences}
+                onChange={(event) =>
+                  setRequireReferences(!event.target.checked)
+                }
+              />
+              Permitir criar só pelo briefing se uma referência não puder ser
+              lida
+            </label>
             <p className="field-hint">
               A FLUE usa referências para interpretar composição e estilo.
               Textos, marcas e imagens de outros portais não são importados.
@@ -435,7 +547,10 @@ export function AiPortalStudio({
               <span>editorias</span>
             </div>
             <div>
-              <strong>{result.plan.sections.length + 1}</strong>
+              <strong>
+                {result.plan.sections.length +
+                  (result.plan.includeWelcome !== false ? 1 : 0)}
+              </strong>
               <span>seções na homepage</span>
             </div>
             <div>
@@ -499,12 +614,14 @@ export function AiPortalStudio({
                     onChange={(e) =>
                       setEdits({
                         ...edits,
-                        template: e.target.value as "classic" | "modern" | "daily",
+                        template: e.target.value as
+                          "classic" | "modern" | "daily",
                       })
                     }
                   >
                     <option value="classic">Influente News</option>
-                    <option value="modern">Revista Influente</option><option value="daily">Jornal Diário</option>
+                    <option value="modern">Revista Influente</option>
+                    <option value="daily">Jornal Diário</option>
                   </select>
                 </label>
                 <div className="ai-palette">
@@ -537,13 +654,15 @@ export function AiPortalStudio({
                   ))}
                 </div>
                 <ol className="ai-section-list">
-                  <li>
-                    <span>01</span>
-                    <div>
-                      <strong>{result.plan.identity.welcomeTitle}</strong>
-                      <small>Apresentação editorial</small>
-                    </div>
-                  </li>
+                  {result.plan.includeWelcome !== false && (
+                    <li>
+                      <span>01</span>
+                      <div>
+                        <strong>{result.plan.identity.welcomeTitle}</strong>
+                        <small>Apresentação editorial</small>
+                      </div>
+                    </li>
+                  )}
                   {result.plan.sections.map((s, i) => (
                     <li key={i}>
                       <span>{String(i + 2).padStart(2, "0")}</span>
@@ -556,6 +675,10 @@ export function AiPortalStudio({
                               banner: "Publicidade",
                               text: "Texto editorial",
                               category: "Editoria",
+                              video: "Vídeo",
+                              image: "Imagem",
+                              sponsored: "Patrocinado",
+                              featured: "Destaques",
                             }[s.type]}
                         </strong>
                         <small>{s.categorySlug || s.type}</small>
@@ -614,9 +737,9 @@ export function AiPortalStudio({
                   Publicar também os textos iniciais gerados por IA
                 </label>
                 <p className="field-hint">
-                  Desmarcado: textos ficam como rascunhos no editor de texto. Revise o
-                  conteúdo antes de publicar. Páginas legais permanecem em
-                  rascunho.
+                  Desmarcado: textos ficam como rascunhos no editor de texto.
+                  Revise o conteúdo antes de publicar. Páginas legais permanecem
+                  em rascunho.
                 </p>
                 <Button type="submit" disabled={creating || !edited}>
                   {creating ? (

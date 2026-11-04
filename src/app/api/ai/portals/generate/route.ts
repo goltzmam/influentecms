@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { apiOwner, jsonBody, apiError, ApiFailure } from "@/lib/ai/access";
 import { briefSchema } from "@/lib/ai/schema";
 import { generateBlueprint, AiError } from "@/lib/ai/gemini";
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
     jobId: string | undefined;
   try {
     auth = await apiOwner(request, true);
-    const input = briefSchema.safeParse(await jsonBody(request));
+    const input = briefSchema.safeParse(await jsonBody(request, 4400000));
     if (!input.success)
       throw new ApiFailure(
         400,
@@ -23,6 +24,25 @@ export async function POST(request: Request) {
         503,
         "A FLUE está temporariamente indisponível. Tente novamente em instantes.",
       );
+    for (const image of input.data.referenceImages) {
+      try {
+        const metadata = await sharp(Buffer.from(image.data, "base64"), {
+          limitInputPixels: 20000000,
+        }).metadata();
+        if (
+          Buffer.from(image.data, "base64").length > 1048576 ||
+          (metadata.pages || 1) > 1 ||
+          !["png", "jpeg", "webp"].includes(metadata.format || "") ||
+          (metadata.width || 0) * (metadata.height || 0) > 20000000
+        )
+          throw new Error();
+      } catch {
+        throw new ApiFailure(
+          400,
+          "Uma das imagens de referência é inválida ou grande demais. Use PNG, JPG ou WebP de até 1 MB.",
+        );
+      }
+    }
     const start = await auth.client.rpc("start_portal_ai_job", {
       p_organization: auth.organizationId,
       p_brief: input.data.brief,

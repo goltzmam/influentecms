@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import sharp from "sharp";
+import { experienceSchema, creativeSchema, menuSchema } from "@/lib/experience";
 import { requireAdmin } from "@/lib/auth";
 import { requirePortal } from "@/lib/portal";
 import {
@@ -182,6 +183,12 @@ export async function saveSettings(form: FormData) {
   try {
     const settings = settingsSchema.parse({
       ...portal.settings,
+      experience: experienceSchema.parse(
+        JSON.parse(
+          str(form, "experience") ||
+            JSON.stringify(portal.settings.experience || {}),
+        ),
+      ),
       logo: str(form, "logo"),
       favicon: str(form, "favicon"),
       color: str(form, "color"),
@@ -258,6 +265,9 @@ export async function saveHomepage(form: FormData) {
     }
     const design = z
       .object({
+        experience: experienceSchema.optional(),
+        menus: z.array(menuSchema).max(15).optional(),
+        menusMode: z.enum(["auto", "custom"]).optional(),
         color: z
           .string()
           .regex(/^#[a-f0-9]{6}$/i)
@@ -389,7 +399,8 @@ export async function saveCampaign(form: FormData) {
     const input = z
       .object({
         name: z.string().trim().min(1).max(120),
-        image_url: imageSchema.refine(Boolean, "Envie a imagem."),
+        image_url: imageSchema,
+        creative: creativeSchema,
         link: linkSchema,
         position: z.enum([
           "header",
@@ -398,6 +409,14 @@ export async function saveCampaign(form: FormData) {
           "between",
           "category",
           "sponsored",
+          "before-content",
+          "after-content",
+          "article-top",
+          "article-middle",
+          "article-bottom",
+          "page-top",
+          "page-bottom",
+          "inline",
         ]),
         starts_at: z.iso.datetime().nullable(),
         ends_at: z.iso.datetime().nullable(),
@@ -406,12 +425,41 @@ export async function saveCampaign(form: FormData) {
       .parse({
         name: str(form, "name"),
         image_url: str(form, "image_url"),
+        creative: creativeSchema.parse(
+          JSON.parse(str(form, "creative") || "{}"),
+        ),
         link: str(form, "link"),
         position: str(form, "position"),
         starts_at: date(form, "starts_at"),
         ends_at: date(form, "ends_at"),
         active: form.has("active"),
       });
+    if (input.creative.mediaType === "image" && !input.image_url)
+      throw new Error("CMS:Adicione uma imagem ao anúncio.");
+    if (input.creative.mediaType === "video" && !input.creative.videoUrl)
+      throw new Error("CMS:Adicione o link do vídeo ao anúncio.");
+    if (input.creative.categoryIds?.length) {
+      const valid = await client
+        .from("categories")
+        .select("id")
+        .eq("portal_id", portal.id)
+        .in("id", input.creative.categoryIds);
+      if (
+        valid.error ||
+        valid.data?.length !== input.creative.categoryIds.length
+      )
+        throw new Error("CMS:Escolha categorias deste portal.");
+    }
+    if (input.creative.sectionIds?.length) {
+      const draft = await client.rpc("get_home_draft", { target: portal.id });
+      const ids = new Set(
+        [...(portal.home_published || []), ...(draft.data || [])].map(
+          (s: { id: string }) => s.id,
+        ),
+      );
+      if (input.creative.sectionIds.some((id) => !ids.has(id)))
+        throw new Error("CMS:Escolha seções existentes neste portal.");
+    }
     if (input.starts_at && input.ends_at && input.ends_at <= input.starts_at)
       throw new Error("CMS:A data final deve ser posterior à inicial.");
     const id = str(form, "id");
@@ -441,13 +489,17 @@ export async function savePartner(form: FormData) {
     const input = z
       .object({
         name: z.string().trim().min(1).max(120),
-        image_url: imageSchema.refine(Boolean),
+        image_url: imageSchema,
+        creative: creativeSchema,
         link: linkSchema,
         active: z.boolean(),
       })
       .parse({
         name: str(form, "name"),
         image_url: str(form, "image_url"),
+        creative: creativeSchema.parse(
+          JSON.parse(str(form, "creative") || "{}"),
+        ),
         link: str(form, "link"),
         active: form.has("active"),
       });

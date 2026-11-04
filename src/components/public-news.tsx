@@ -1,5 +1,5 @@
 import type { Article, Category, Campaign } from "@/lib/types";
-import { cleanHtml } from "@/lib/content";
+import { splitArticleContent } from "@/lib/content";
 import { NewsImage, Campaigns } from "./public-template";
 export {
   NewsShell,
@@ -17,9 +17,11 @@ export function NewsArticle({
   category?: Category;
   campaigns: Campaign[];
 }) {
+  const content = splitArticleContent(article.content);
   return (
     <div className="article-layout">
       <article className="public-article">
+        <Campaigns campaigns={campaigns} position="article-top" />
         {category && <span className="news-kicker">{category.name}</span>}
         <h1>{article.title}</h1>
         <p className="article-subtitle">{article.subtitle}</p>
@@ -43,10 +45,14 @@ export function NewsArticle({
             {article.cover_alt && <figcaption>{article.cover_alt}</figcaption>}
           </figure>
         )}
-        <div
-          className="article-body"
-          dangerouslySetInnerHTML={{ __html: cleanHtml(article.content) }}
-        />
+        <div className="article-body">
+          <div dangerouslySetInnerHTML={{ __html: content[0] }} />
+          <Campaigns campaigns={campaigns} position="article-middle" />
+          {content[1] && (
+            <div dangerouslySetInnerHTML={{ __html: content[1] }} />
+          )}
+        </div>
+        <Campaigns campaigns={campaigns} position="article-bottom" />
         {article.tags.length > 0 && (
           <div className="article-tags">
             {article.tags.map((tag) => (

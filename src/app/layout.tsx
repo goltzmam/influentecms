@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./portal-reference.css";
+import "./portal-experience.css";
 export const metadata: Metadata = {
   title: "Influente CMS",
   description: "Central editorial privada da Influente Comunicação",

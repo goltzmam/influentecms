@@ -273,6 +273,7 @@ test("Fluxo real: autenticar, criar, publicar, personalizar, anunciar e renderiz
     }),
   ).toBeVisible();
   await page.goto(`/painel/${portalId}/publicidade`);
+  await page.getByRole("button", { name: /Campanha institucional/ }).click();
   const campaignForm = page.locator("form.panel").filter({
     has: page.getByRole("heading", { name: "Editar campanha", exact: true }),
   });

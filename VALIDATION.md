@@ -41,3 +41,10 @@ O proprietário deve criar sua conta administrativa pelo processo seguro do READ
 - Termos de infraestrutura e variáveis removidos das telas, avisos e configuração da conta.
 - O cadastro de domínio permanece pendente até a verificação real. A nova credencial necessária à conexão automática foi bloqueada pela revisão de autorização; nenhum domínio foi indevidamente ativado.
 - Serviço local de captura de e-mails habilitado para testar convites sem enviar mensagens externas. Na produção, envio automático depende do serviço de e-mail; há convite copiável de uso único como alternativa.
+
+## Experiência premium e anúncios compartilhados
+
+- 34 testes de integração passaram, cobrindo menu seguro em níveis, limites de layout, segmentação por página/editoria, cor do título independente da seção, inserção de anúncios em HTML balanceado, renderização de fontes, referência obrigatória e reparo de plano multimodal inválido.
+- Cinco fluxos Playwright validam os três temas, galeria comercial, criação e pausa de campanha, vídeo em parceiro/anúncio, menu lateral com submenu e Escape, formulário compacto, rodapé clicável, cores por clique, campanha exclusiva de notícia e de seção, rascunhos, perfis de editor e atualização de artes.
+- Fonte incluída no rastreamento das funções de criação e do painel. Imagens de referência são validadas, limitadas a 1 MB cada e enviadas ao modelo somente durante a geração; não ficam expostas no histórico.
+- A entrega automática de e-mails e a ativação administrativa dos domínios continuam dependendo das conexões externas descritas anteriormente; esta alteração não cria credenciais novas nem contorna a rejeição de autorização.

@@ -150,6 +150,15 @@ test("Estúdio IA recupera plano, pré-visualiza e cria portal editável real", 
     .eq("portal_id", portal.data.id);
   expect(articles.data?.[0].status).toBe("draft");
   expect(articles.data?.[0].cover_url).toContain("/storage/v1/object/public/");
+  await page.goto(`/painel/${portal.data.id}/midia`);
+  await page.getByRole("button", { name: "Atualizar artes de marca" }).click();
+  await expect(page.getByText(/artes de marca atualizadas/)).toBeVisible();
+  const refreshed = await client
+    .from("portals")
+    .select("settings")
+    .eq("id", portal.data.id)
+    .single();
+  expect(refreshed.data?.settings.logo).not.toBe(portal.data.settings.logo);
   await page.goto("/p/" + slug);
   await expect(
     page.getByRole("img", { name: "SaudeFIT Editável", exact: true }).first(),

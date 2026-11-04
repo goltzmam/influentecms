@@ -1,3 +1,4 @@
+import sharp from "sharp";
 // Optional live release check. Uses a disposable owner, never the real account.
 // No credentials, prompts from users, generated copy or session tokens are logged.
 import { randomUUID, randomBytes } from "node:crypto";
@@ -80,14 +81,25 @@ try {
       !/Gemini conectado|ESTÚDIO GEMINI/.test(html),
     "FLUE interface mismatch",
   );
+  const screenshot = await sharp(
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1000"><rect width="1200" height="1000" fill="#f8fbf8"/><rect width="1200" height="130" fill="#24543e"/><rect x="50" y="30" width="240" height="50" rx="12" fill="#dceba2"/><rect x="50" y="180" width="730" height="350" rx="18" fill="#173b2b"/><rect x="820" y="180" width="330" height="210" rx="18" fill="#e4efbc"/><rect x="820" y="420" width="330" height="180" rx="18" fill="#edf2ed"/><rect x="50" y="580" width="730" height="70" rx="10" fill="#dceba2"/><rect x="50" y="680" width="730" height="120" rx="12" fill="#e6eee8"/><rect y="850" width="1200" height="150" fill="#142b20"/></svg>',
+    ),
+  )
+    .png()
+    .toBuffer();
   stage = "generation";
   const generated = await fetch(origin + "/api/ai/portals/generate", {
     method: "POST",
     headers,
     body: JSON.stringify({
       brief:
-        "Crie um portal editorial de fitness chamado SaudeFIT, com foco em movimento para iniciantes e hábitos saudáveis, identidade verde, páginas Sobre e Contato e textos atemporais em rascunho.",
-      references: ["https://agenciabrasil.ebc.com.br/"],
+        "Crie um portal editorial de fitness chamado SaudeFIT, com foco em movimento para iniciantes e hábitos saudáveis, páginas Sobre e Contato e textos atemporais em rascunho. Use a captura anexada como referência de paleta verde e composição. Configure design com menu híbrido, formulário compacto de 420 px, rodapé com chamada comercial https://example.com/anuncie e cartões de parceiros. Separe cores dos títulos e copy por seção.",
+      references: [],
+      requireReferences: true,
+      referenceImages: [
+        { mimeType: "image/png", data: screenshot.toString("base64") },
+      ],
     }),
     signal: AbortSignal.timeout(270000),
   });
@@ -101,6 +113,10 @@ try {
     "Generated structure missing",
   );
   check(!("model" in project), "Provider leaked in response");
+  check(
+    project.plan.design?.navigation && project.plan.design?.contact,
+    "Editable visual design missing",
+  );
   const plan = project.plan,
     i = plan.identity;
   stage = "creation";
@@ -147,6 +163,8 @@ try {
       check: "FLUE live authenticated flow",
       status: "PASS",
       references: project.references.map((r) => r.status),
+      screenshotReference: true,
+      editableExperience: !!plan.design,
       categories: plan.categories.length,
       sections: plan.sections.length,
       pages: plan.pages.length,

@@ -154,6 +154,7 @@ test("Falhas de cota e respostas inválidas não viram portais simulados", async
     {
       brief: "Briefing editorial de teste.",
       references: ["https://example.com"],
+      requireReferences: false,
     },
     {
       key: "test-key-not-a-secret",
@@ -379,4 +380,69 @@ test("FLUE recupera indisponibilidade com modelo realmente listado pelo provedor
   assert.equal(result.model, "gemini-test-flash");
   assert.equal(result.plan.name, "SaudeFIT");
   assert.equal(calls.length, 4);
+});
+
+test("FLUE recusa referência não consultada sem autorização para ignorá-la", async () => {
+  await assert.rejects(
+    generateBlueprint(
+      {
+        brief: "Crie um portal editorial com a referência enviada.",
+        references: ["https://example.com"],
+      },
+      {
+        key: "test-key-not-a-secret",
+        fetcher: async () =>
+          Response.json({
+            candidates: [
+              {
+                content: { parts: [{ text: "Sem confirmação de consulta." }] },
+              },
+            ],
+          }),
+      },
+    ),
+    (error) => error.code === "reference_unavailable",
+  );
+});
+test("FLUE corrige uma estrutura inválida e envia capturas como dados visuais", async () => {
+  let calls = 0;
+  let captured;
+  const result = await generateBlueprint(
+    {
+      brief: "Crie um portal editorial com base nesta captura.",
+      references: [],
+      referenceImages: [{ mimeType: "image/png", data: "test-base64" }],
+    },
+    {
+      key: "test-key-not-a-secret",
+      fetcher: async (_url, init) => {
+        captured = JSON.parse(init.body);
+        calls++;
+        return Response.json({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text:
+                      calls === 1
+                        ? '{"name":"incompleto"}'
+                        : JSON.stringify(blueprint),
+                  },
+                ],
+              },
+            },
+          ],
+        });
+      },
+    },
+  );
+  assert.equal(calls, 2);
+  assert.equal(result.plan.name, "SaudeFIT");
+  assert.ok(
+    captured.contents[0].parts.some(
+      (part) => part.inlineData?.mimeType === "image/png",
+    ),
+  );
+  assert.ok(captured.contents.at(-1).parts[0].text.includes("validação"));
 });

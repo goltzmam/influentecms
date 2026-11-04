@@ -1,3 +1,4 @@
+import type { Experience, MenuItem, Creative } from "./experience";
 export type Settings = {
   logo?: string;
   favicon?: string;
@@ -7,7 +8,8 @@ export type Settings = {
   footer?: string;
   header?: string;
   socials?: { label: string; url: string }[];
-  menus?: { label: string; url: string }[];
+  menus?: MenuItem[];
+  experience?: Experience;
   menusMode?: "auto" | "custom";
   accentColor?: string;
   surfaceColor?: string;
@@ -60,6 +62,14 @@ export type Section = {
     | "square"
     | "native";
   campaignId?: string;
+  titleColor?: string;
+  titleBackground?: string;
+  copyColor?: string;
+  cardBackground?: string;
+  titleSize?: number;
+  copySize?: number;
+  radius?: number;
+  align?: "left" | "center" | "right";
   categoryId?: string;
   articleIds?: string[];
   text?: string;
@@ -104,6 +114,7 @@ export type Article = {
 };
 export type Category = { id: string; name: string; slug: string };
 export type Campaign = {
+  creative?: Partial<Creative>;
   id: string;
   name: string;
   image_url: string;
@@ -114,6 +125,7 @@ export type Campaign = {
   ends_at: string | null;
 };
 export type Partner = {
+  creative?: Partial<Creative>;
   id: string;
   name: string;
   image_url: string;

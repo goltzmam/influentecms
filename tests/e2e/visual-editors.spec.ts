@@ -67,7 +67,12 @@ test.afterAll(async () => {
 
 let editorUserId = "";
 test.afterAll(async () => {
-  if(!editorUserId){const listed=await client.auth.admin.listUsers();editorUserId=listed.data.users.find(u=>u.email===`editor-${suffix}@example.test`)?.id||"";}
+  if (!editorUserId) {
+    const listed = await client.auth.admin.listUsers();
+    editorUserId =
+      listed.data.users.find((u) => u.email === `editor-${suffix}@example.test`)
+        ?.id || "";
+  }
   if (editorUserId) await client.auth.admin.deleteUser(editorUserId);
 });
 test("Tema Diário, editor visual e acesso sem senha isolado por portal", async ({
@@ -237,6 +242,9 @@ test("Tema Diário, editor visual e acesso sem senha isolado por portal", async 
   ).toBeVisible();
   await page.goto(`/painel/${portalId}/equipe`);
   await page.getByRole("button", { name: "Remover acesso" }).click();
+  await expect(
+    page.getByText("Editor removido.", { exact: true }),
+  ).toBeVisible();
   await editor.goto(`/painel/${portalId}`);
   await expect(editor).toHaveURL(/\/login/);
   await context.close();

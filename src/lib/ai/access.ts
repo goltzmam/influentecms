@@ -29,7 +29,7 @@ export async function apiOwner(request: Request, mutate = false) {
     throw new ApiFailure(403, "Acesso exclusivo ao proprietário.");
   return { client, user, organizationId: member.data.organization_id };
 }
-export async function jsonBody(request: Request) {
+export async function jsonBody(request: Request, maxBytes = 350000) {
   const reader = request.body?.getReader();
   if (!reader) throw new ApiFailure(400, "Envie os dados do projeto.");
   let size = 0;
@@ -38,7 +38,7 @@ export async function jsonBody(request: Request) {
     const { done, value } = await reader.read();
     if (done) break;
     size += value.length;
-    if (size > 350000) {
+    if (size > maxBytes) {
       await reader.cancel();
       throw new ApiFailure(413, "O projeto ultrapassou o limite permitido.");
     }

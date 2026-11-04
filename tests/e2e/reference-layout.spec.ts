@@ -321,6 +321,7 @@ test("PDF: mesma composição nos dois templates, carrossel, paleta, contato e i
   const first = created[0];
   await page.goto(`/p/${first.slug}`);
   const contact = page.locator(".reader-contact");
+  if(await contact.locator("summary").count())await contact.locator("summary").click();
   await contact.getByLabel("Nome *", { exact: true }).fill("Leitora de teste");
   await contact
     .getByLabel("E-mail *", { exact: true })
@@ -356,7 +357,7 @@ test("PDF: mesma composição nos dois templates, carrossel, paleta, contato e i
   await expect(page).toHaveURL(/\/painel$/);
   await page.goto(`/painel/${first.id}/leitores`);
   await expect(
-    page.getByText("Contato de teste · Leitora de teste · Sugestão"),
+    page.getByText("Contato de teste · Leitora de teste · Outro"),
   ).toBeVisible();
   await expect(
     page.getByText(`reader-${suffix}@example.test`, { exact: true }),
@@ -384,11 +385,11 @@ test("PDF: mesma composição nos dois templates, carrossel, paleta, contato e i
   await page.goto(`/painel/${first.id}/aparencia`);
   await page.getByLabel('Organização do menu',{exact:true}).selectOption('custom');
   const navigation=page.locator('section.panel').filter({has:page.getByRole('heading',{name:'Menu de navegação',exact:true})});
-  await navigation.getByRole('button',{name:'+ Adicionar link',exact:true}).click();
-  await navigation.getByRole('button',{name:'+ Adicionar link',exact:true}).click();
-  await navigation.getByLabel('Rótulo',{exact:true}).nth(0).fill('Sobre a publicação');await navigation.getByLabel('Endereço',{exact:true}).nth(0).fill('/pagina/sobre');
-  await navigation.getByLabel('Rótulo',{exact:true}).nth(1).fill('Notícias');await navigation.getByLabel('Endereço',{exact:true}).nth(1).fill('/busca?q=noticia');
-  await navigation.getByRole('button',{name:'Subir Notícias',exact:true}).click();
+  await navigation.getByRole('button',{name:'+ Adicionar item ao menu',exact:true}).click();
+  await navigation.getByRole('button',{name:'+ Adicionar item ao menu',exact:true}).click();
+  await navigation.getByLabel('Nome do item',{exact:true}).nth(0).fill('Sobre a publicação');await navigation.getByLabel('Destino do item',{exact:true}).nth(0).fill('/pagina/sobre');
+  await navigation.getByLabel('Nome do item',{exact:true}).nth(1).fill('Notícias');await navigation.getByLabel('Destino do item',{exact:true}).nth(1).fill('/busca?q=noticia');
+  await navigation.getByRole('button',{name:'Subir item 2',exact:true}).click();
   await page.getByRole('button',{name:'Salvar personalização'}).click();await expect(page.getByText('Personalização salva.',{exact:true})).toBeVisible();
   await page.goto(`/p/${first.slug}`);await expect(page.locator('.news-nav a').first()).toHaveText('Notícias');await expect(page.locator('.news-nav a')).toHaveCount(2);
 

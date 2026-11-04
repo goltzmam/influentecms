@@ -1,5 +1,9 @@
-import {readerMessage} from "@/lib/messages";
-import {EditorInviteLink} from "@/components/editor-invite-link";
+import { refreshBrandArtwork } from "../../artwork-actions";
+import { CommercialManager } from "@/components/commercial-manager";
+import { ExperienceEditor } from "@/components/experience-editor";
+import { MenuEditor } from "@/components/menu-editor";
+import { readerMessage } from "@/lib/messages";
+import { EditorInviteLink } from "@/components/editor-invite-link";
 import { inviteEditor, removeEditor } from "../../team-actions";
 import Link from "next/link";
 import { AppearanceDetails } from "@/components/appearance-details";
@@ -431,6 +435,7 @@ export default async function PortalAdmin({
               </p>
             </section>
             <AppearanceDetails portalId={portalId} settings={s} />
+            <ExperienceEditor portalId={portalId} value={s.experience || {}} />
             <section className="panel">
               <h2>Menu de navegação</h2>
               <label>
@@ -448,7 +453,7 @@ export default async function PortalAdmin({
                   </option>
                 </select>
               </label>
-              <LinksEditor name="menus" value={s.menus} />
+              <MenuEditor name="menus" value={s.menus} />
             </section>
             <section className="panel">
               <h2>Redes sociais</h2>
@@ -555,6 +560,17 @@ export default async function PortalAdmin({
             Atualizar biblioteca ↻
           </Link>
         </section>
+        <form action={refreshBrandArtwork} className="panel artwork-refresh">
+          <PortalId id={portalId} />
+          <div>
+            <h3>Artes de marca com texto legível</h3>
+            <p className="field-hint">
+              Atualize apenas logos, ícones e capas gerados pela FLUE. Suas
+              fotografias e imagens enviadas são preservadas.
+            </p>
+          </div>
+          <SubmitButton>Atualizar artes de marca</SubmitButton>
+        </form>
         <div className="media-grid">
           {media.map((m) => (
             <article className="panel" key={m.id}>
@@ -582,81 +598,55 @@ export default async function PortalAdmin({
         .eq("portal_id", portalId)
         .order("name"),
     ) as Campaign[];
-    const form = (c?: Campaign) => (
-      <form action={saveCampaign} className="panel" key={c?.id || "new"}>
-        <PortalId id={portalId} />
-        <input type="hidden" name="id" value={c?.id || ""} />
-        <h2>{c ? "Editar campanha" : "Nova campanha"}</h2>
-        <label>
-          Nome
-          <input name="name" defaultValue={c?.name} required />
-        </label>
-        <MediaInput portalId={portalId} value={c?.image_url} />
-        <label>
-          Link
-          <input name="link" defaultValue={c?.link} placeholder="https://..." />
-        </label>
-        <label>
-          Posição
-          <select
-            aria-label="Posição"
-            name="position"
-            defaultValue={c?.position || "header"}
-          >
-            <option value="header">Cabeçalho</option>
-            <option value="sidebar">Lateral</option>
-            <option value="footer">Rodapé</option>
-            <option value="between">Entre editorias</option>
-            <option value="category">Ao lado da editoria</option>
-            <option value="sponsored">Ao lado do publieditorial</option>
-          </select>
-        </label>
-        <div className="form-columns">
-          <label>
-            Início (UTC)
-            <input
-              name="starts_at"
-              type="datetime-local"
-              defaultValue={c?.starts_at?.slice(0, 16)}
-            />
-          </label>
-          <label>
-            Fim (UTC)
-            <input
-              name="ends_at"
-              type="datetime-local"
-              defaultValue={c?.ends_at?.slice(0, 16)}
-            />
-          </label>
-        </div>
-        <label className="check-label">
-          <input
-            type="checkbox"
-            name="active"
-            defaultChecked={c?.active ?? true}
-          />
-          Campanha ativa
-        </label>
-        <SubmitButton>Salvar campanha</SubmitButton>
-      </form>
-    );
+    const [cats, draft, pages, articles] = await Promise.all([
+      client
+        .from("categories")
+        .select("id,name,slug")
+        .eq("portal_id", portalId),
+      client.rpc("get_home_draft", { target: portalId }),
+      client
+        .from("pages")
+        .select("title,slug")
+        .eq("portal_id", portalId)
+        .limit(100),
+      client
+        .from("articles")
+        .select("title,slug")
+        .eq("portal_id", portalId)
+        .limit(100),
+    ]);
+    const targets = [
+      ...(pages.data || []).map((p) => ({
+        value: `/pagina/${p.slug}`,
+        label: `Página · ${p.title}`,
+      })),
+      ...(articles.data || []).map((a) => ({
+        value: `/noticia/${a.slug}`,
+        label: `Notícia · ${a.title}`,
+      })),
+      ...(cats.data || []).map((c) => ({
+        value: `/categoria/${c.slug}`,
+        label: `Editoria · ${c.name}`,
+      })),
+    ];
+    const adSections = Array.from(
+      new Map(
+        [...(draft.data || []), ...portal.home_published].map((s: Section) => [
+          s.id,
+          s,
+        ]),
+      ).values(),
+    ) as Section[];
     body = (
-      <>
-        <div className="editor-grid">
-          <div>
-            {campaigns.map((c) => (
-              <div key={c.id}>
-                {form(c)}
-                <Delete id={c.id} table="campaigns" portalId={portalId} />
-              </div>
-            ))}
-          </div>
-          <aside>{form()}</aside>
-        </div>
-        {!campaigns.length && (
-          <p className="muted">Nenhuma campanha cadastrada.</p>
-        )}
-      </>
+      <CommercialManager
+        portalId={portalId}
+        key={`campaigns-${campaigns.length}`}
+        kind="campaign"
+        items={campaigns}
+        categories={cats.data || []}
+        sections={adSections}
+        pages={targets}
+      />
     );
   } else if (key === "parceiros") {
     const partners = check(
@@ -666,43 +656,13 @@ export default async function PortalAdmin({
         .eq("portal_id", portalId)
         .order("name"),
     ) as Partner[];
-    const form = (p?: Partner) => (
-      <form action={savePartner} className="panel" key={p?.id || "new"}>
-        <PortalId id={portalId} />
-        <input type="hidden" name="id" value={p?.id || ""} />
-        <h2>{p ? "Editar parceiro" : "Novo parceiro"}</h2>
-        <label>
-          Nome
-          <input name="name" required defaultValue={p?.name} />
-        </label>
-        <MediaInput portalId={portalId} label="Logotipo" value={p?.image_url} />
-        <label>
-          Link
-          <input name="link" defaultValue={p?.link} />
-        </label>
-        <label className="check-label">
-          <input
-            type="checkbox"
-            name="active"
-            defaultChecked={p?.active ?? true}
-          />
-          Exibir no portal
-        </label>
-        <SubmitButton>Salvar parceiro</SubmitButton>
-      </form>
-    );
     body = (
-      <div className="editor-grid">
-        <div>
-          {partners.map((p) => (
-            <div key={p.id}>
-              {form(p)}
-              <Delete id={p.id} table="partners" portalId={portalId} />
-            </div>
-          ))}
-        </div>
-        <aside>{form()}</aside>
-      </div>
+      <CommercialManager
+        key={`partners-${partners.length}`}
+        portalId={portalId}
+        kind="partner"
+        items={partners}
+      />
     );
   } else if (key === "paginas") {
     const pages = check(
@@ -893,7 +853,7 @@ export default async function PortalAdmin({
                     Remover acesso
                   </button>
                 </form>
-                <EditorInviteLink portalId={portalId} email={editor.email}/>
+                <EditorInviteLink portalId={portalId} email={editor.email} />
                 <form action={inviteEditor}>
                   <PortalId id={portalId} />
                   <input type="hidden" name="email" value={editor.email} />

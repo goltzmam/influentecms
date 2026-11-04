@@ -1,3 +1,7 @@
+import { Fragment } from "react";
+import type { MenuItem } from "@/lib/experience";
+import { PortalNavigation } from "./portal-navigation";
+import { AdCreative, PartnerCard } from "./ad-creative";
 import Link from "next/link";
 import Image from "next/image";
 import type { CSSProperties } from "react";
@@ -8,6 +12,7 @@ import {
   Linkedin,
   Globe,
   MessageCircle,
+  ArrowUpRight,
 } from "lucide-react";
 import type {
   Portal,
@@ -79,6 +84,26 @@ function SocialIcon({ label }: { label: string }) {
             : Globe;
   return <Icon size={19} aria-hidden="true" />;
 }
+function FooterLinks({
+  items,
+  basePath,
+}: {
+  items: MenuItem[];
+  basePath: string;
+}) {
+  return (
+    <ul className="footer-links">
+      {items.map((item, index) => (
+        <li key={index}>
+          <Link href={siteLink(item.url, basePath)}>{item.label}</Link>
+          {item.children?.length ? (
+            <FooterLinks items={item.children} basePath={basePath} />
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
 export function NewsShell({
   portal,
   categories,
@@ -129,7 +154,18 @@ export function NewsShell({
           PRÉ-VISUALIZAÇÃO PRIVADA · Conteúdo não publicado
         </div>
       )}
-      <header className="reference-header">
+      <header
+        data-edit-region="navigation"
+        className={`reference-header nav-logo-${s.experience?.navigation?.logoAlign || "left"} ${s.experience?.navigation?.sticky ? "header-sticky" : ""}`}
+        style={{
+          backgroundColor: s.experience?.navigation?.customColors
+            ? s.experience.navigation.background
+            : undefined,
+          color: s.experience?.navigation?.customColors
+            ? s.experience.navigation.color
+            : undefined,
+        }}
+      >
         <div className="news-masthead">
           <div className="brand-column">
             <Link className="news-logo" href={basePath || "/"}>
@@ -141,13 +177,13 @@ export function NewsShell({
             </Link>
             {s.tagline && <p className="brand-tagline">{s.tagline}</p>}
           </div>
-          <nav className="news-nav" aria-label="Navegação do portal">
-            {links.map((l, i) => (
-              <Link key={i} href={siteLink(l.url, basePath)}>
-                {l.label}
-              </Link>
-            ))}
-          </nav>
+          <PortalNavigation
+            items={links}
+            basePath={basePath}
+            name={portal.name}
+            logo={s.logo}
+            config={s.experience?.navigation}
+          />
           <div className="header-tools">
             {preview ? (
               <div className="public-search">
@@ -189,26 +225,53 @@ export function NewsShell({
       </header>
       <main className="news-container">
         <Campaigns campaigns={campaigns} position="header" />
+        <Campaigns campaigns={campaigns} position="before-content" />
         {children}
+        <Campaigns campaigns={campaigns} position="after-content" />
         <Campaigns campaigns={campaigns} position="footer" />
         {partners.length > 0 && (
-          <section className="public-partners">
-            <h2>Parceiros</h2>
-            <div>
+          <section
+            data-edit-region="partners"
+            className={`public-partners premium-partners partners-${s.experience?.partners?.layout || "cards"}`}
+            style={
+              {
+                background: s.experience?.partners?.background,
+                color: s.experience?.partners?.color,
+                "--partner-columns": s.experience?.partners?.columns || 4,
+                "--partner-card-bg": s.experience?.partners?.cardBackground,
+                "--partner-radius": `${s.experience?.partners?.radius ?? 16}px`,
+              } as CSSProperties
+            }
+          >
+            <div className="partner-section-heading">
+              <div>
+                <span className="section-overline">CONEXÕES QUE IMPORTAM</span>
+                <h2>
+                  {s.experience?.partners?.title || "Quem caminha com a gente"}
+                </h2>
+                {s.experience?.partners?.subtitle && (
+                  <p>{s.experience.partners.subtitle}</p>
+                )}
+              </div>
+              <span className="partner-count">
+                {partners.length}{" "}
+                {partners.length === 1 ? "parceiro" : "parceiros"}
+              </span>
+            </div>
+            <div className="premium-partner-grid">
               {partners.map((p) => (
-                <a
+                <PartnerCard
                   key={p.id}
-                  href={safeLink(p.link)}
-                  target="_blank"
-                  rel="sponsored noopener noreferrer"
-                >
-                  <img src={safeLink(p.image_url)} alt={p.name} />
-                </a>
+                  partner={p}
+                  showName={s.experience?.partners?.showNames !== false}
+                  fit={s.experience?.partners?.imageFit}
+                />
               ))}
             </div>
           </section>
         )}
-        {(s.socialCards?.some((c) => c.image) || s.contactEnabled) && (
+        {(s.socialCards?.some((c) => c.image) ||
+          (s.contactEnabled && s.experience?.contact?.mode !== "hidden")) && (
           <section className="community-section">
             <div className="community-cards">
               {s.socialCards
@@ -230,6 +293,7 @@ export function NewsShell({
             </div>
             {s.contactEnabled && (
               <ContactForm
+                config={s.experience?.contact}
                 portalId={portal.id}
                 title={s.contactTitle || "Fale com a redação"}
                 privacyUrl={
@@ -267,16 +331,40 @@ export function NewsShell({
           </div>
         </section>
       )}
-      <footer className="news-footer">
+      <footer
+        data-edit-region="footer"
+        className={`news-footer footer-layout-${s.experience?.footer?.layout || "columns"}`}
+        style={
+          {
+            background: s.experience?.footer?.background,
+            color: s.experience?.footer?.color,
+            "--footer-columns": Math.min(
+              s.experience?.footer?.columns || 4,
+              1 +
+                (s.experience?.footer?.showMenu !== false ? 1 : 0) +
+                (s.experience?.footer?.showCommercial !== false ? 1 : 0) +
+                (s.experience?.footer?.showSocials !== false &&
+                s.socials?.length
+                  ? 1
+                  : 0),
+            ),
+          } as CSSProperties
+        }
+      >
         <div className="footer-columns">
           <section>
-            <Link className="news-logo" href={basePath || "/"}>
-              {s.logo ? (
-                <img src={safeLink(s.logo)} alt={portal.name} />
-              ) : (
-                <span>{portal.name}</span>
-              )}
-            </Link>
+            {s.experience?.footer?.showLogo !== false && (
+              <Link className="news-logo" href={basePath || "/"}>
+                {s.experience?.footer?.logo || s.logo ? (
+                  <img
+                    src={safeLink(s.experience?.footer?.logo || s.logo || "")}
+                    alt={portal.name}
+                  />
+                ) : (
+                  <span>{portal.name}</span>
+                )}
+              </Link>
+            )}
             <p>{s.tagline}</p>
             {s.contactPhone && (
               <a href={`tel:${s.contactPhone.replace(/[^+0-9]/g, "")}`}>
@@ -287,46 +375,123 @@ export function NewsShell({
               <a href={`mailto:${s.contactEmail}`}>{s.contactEmail}</a>
             )}
           </section>
-          <nav aria-label="Navegação do rodapé">
-            {links.map((l, i) => (
-              <Link key={i} href={siteLink(l.url, basePath)}>
-                {l.label}
-              </Link>
-            ))}
-            <Link href={`${basePath}/rss.xml`}>RSS</Link>
-          </nav>
-          <section className="footer-commercial">
-            <p>{s.commercialText}</p>
-            {s.commercialPhone && (
-              <a href={`tel:${s.commercialPhone.replace(/[^+0-9]/g, "")}`}>
-                {s.commercialPhone}
-              </a>
-            )}
-            {s.commercialEmail && (
-              <a href={`mailto:${s.commercialEmail}`}>{s.commercialEmail}</a>
-            )}
-          </section>
-          <section className="footer-social">
-            <p>Acompanhe o {portal.name} nas redes</p>
-            <div>
-              {s.socials?.map((l, i) => (
+          {s.experience?.footer?.showMenu !== false && (
+            <nav aria-label="Navegação do rodapé">
+              <FooterLinks
+                items={
+                  s.experience?.footer?.menus?.length
+                    ? s.experience.footer.menus
+                    : links
+                }
+                basePath={basePath}
+              />
+              {s.experience?.footer?.showRss !== false && (
+                <Link href={`${basePath}/rss.xml`}>RSS</Link>
+              )}
+            </nav>
+          )}
+          {s.experience?.footer?.showCommercial !== false && (
+            <section
+              className="footer-commercial"
+              style={{
+                background: s.experience?.footer?.advertBackground,
+                color: s.experience?.footer?.advertColor,
+              }}
+            >
+              {s.experience?.footer?.advertImage && (
                 <a
-                  key={i}
-                  href={safeLink(l.url)}
-                  aria-label={l.label}
+                  className="footer-advert-image"
+                  href={safeLink(s.experience.footer.advertLink || "")}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="sponsored noopener noreferrer"
                 >
-                  <SocialIcon label={l.label} />
+                  <img
+                    src={safeLink(s.experience.footer.advertImage)}
+                    alt={
+                      s.experience.footer.advertTitle || "Anuncie com a gente"
+                    }
+                  />
                 </a>
-              ))}
-            </div>
-          </section>
+              )}
+              {s.experience?.footer?.advertVideo && (
+                <div className="footer-advert-video">
+                  {youtubeEmbed(s.experience.footer.advertVideo) ? (
+                    <iframe
+                      title="Conheça nossas oportunidades"
+                      src={youtubeEmbed(s.experience.footer.advertVideo)}
+                      allowFullScreen
+                      loading="lazy"
+                    />
+                  ) : (
+                    <video
+                      controls
+                      src={safeLink(s.experience.footer.advertVideo)}
+                    />
+                  )}
+                </div>
+              )}
+              {s.experience?.footer?.advertLink ? (
+                <a
+                  className="footer-advert-cta"
+                  href={safeLink(s.experience.footer.advertLink)}
+                >
+                  <strong>
+                    {s.experience.footer.advertTitle || "Anuncie com a gente"}
+                  </strong>
+                  <p>{s.commercialText}</p>
+                  <span>
+                    Conheça as oportunidades{" "}
+                    <ArrowUpRight size={14} aria-hidden="true" />
+                  </span>
+                </a>
+              ) : (
+                <p>{s.commercialText}</p>
+              )}
+              {s.commercialPhone && (
+                <a href={`tel:${s.commercialPhone.replace(/[^+0-9]/g, "")}`}>
+                  {s.commercialPhone}
+                </a>
+              )}
+              {s.commercialEmail && (
+                <a href={`mailto:${s.commercialEmail}`}>{s.commercialEmail}</a>
+              )}
+            </section>
+          )}
+          {s.experience?.footer?.showSocials !== false &&
+            !!s.socials?.length && (
+              <section className="footer-social">
+                <p>Acompanhe o {portal.name} nas redes</p>
+                <div>
+                  {s.socials?.map((l, i) => (
+                    <a
+                      key={i}
+                      href={safeLink(l.url)}
+                      aria-label={l.label}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <SocialIcon label={l.label} />
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
         </div>
+        {s.experience?.footer?.showSearch && (
+          <form className="footer-search" action={`${basePath}/busca`}>
+            <input
+              name="q"
+              placeholder="O que você procura?"
+              aria-label="Buscar no rodapé"
+              disabled={preview}
+            />
+            <button disabled={preview}>Buscar</button>
+          </form>
+        )}
         {s.footer && <p className="footer-note">{s.footer}</p>}
         <small>
-          © {new Date().getFullYear()} {portal.name} · Todos os direitos
-          reservados.
+          {s.experience?.footer?.copyright ||
+            `© ${new Date().getFullYear()} ${portal.name} · Todos os direitos reservados.`}
         </small>
       </footer>
     </div>
@@ -335,25 +500,28 @@ export function NewsShell({
 export function Campaigns({
   campaigns,
   position,
+  sectionId,
 }: {
   campaigns: Campaign[];
   position: string;
+  sectionId?: string;
 }) {
   return (
     <>
       {campaigns
-        .filter((c) => c.position === position)
+        .filter((c) => {
+          const targets = c.creative?.sectionIds;
+          if (targets?.length)
+            return (
+              !!sectionId &&
+              targets.includes(sectionId) &&
+              (position === "inline" || c.position === position)
+            );
+          return !sectionId && c.position === position;
+        })
+        .sort((a, b) => (a.creative?.order || 0) - (b.creative?.order || 0))
         .map((c) => (
-          <aside className={`public-ad ad-${position}`} key={c.id}>
-            <span>Publicidade</span>
-            <a
-              href={safeLink(c.link)}
-              target="_blank"
-              rel="sponsored noopener noreferrer"
-            >
-              <img src={safeLink(c.image_url)} alt={c.name} />
-            </a>
-          </aside>
+          <AdCreative key={c.id} campaign={c} />
         ))}
     </>
   );
@@ -413,21 +581,38 @@ export function NewsGrid({
   categories,
   basePath,
   hero = false,
+  campaigns = [],
 }: {
   articles: Article[];
   categories: Category[];
   basePath: string;
   hero?: boolean;
+  campaigns?: Campaign[];
 }) {
   return (
     <div className={`news-grid ${hero ? "lead-grid" : ""}`}>
-      {articles.map((a) => (
-        <ArticleCard
-          key={a.id}
-          article={a}
-          categories={categories}
-          basePath={basePath}
-        />
+      {articles.map((a, index) => (
+        <Fragment key={a.id}>
+          <ArticleCard
+            key={a.id}
+            article={a}
+            categories={categories}
+            basePath={basePath}
+          />
+          {campaigns
+            .filter(
+              (c) =>
+                c.position === "inline" &&
+                !c.creative?.sectionIds?.length &&
+                !!c.creative?.repeatEvery &&
+                (index + 1) % c.creative.repeatEvery === 0,
+            )
+            .map((c) => (
+              <div className="feed-ad" key={c.id}>
+                <AdCreative campaign={c} />
+              </div>
+            ))}
+        </Fragment>
       ))}
     </div>
   );
@@ -690,7 +875,9 @@ export function Homepage({
   sections?: Section[];
 }) {
   const saved = sections ?? portal.home_published;
-  const blocks = saved.length ? saved : referenceSections(categories,portal.template);
+  const blocks = saved.length
+    ? saved
+    : referenceSections(categories, portal.template);
   return (
     <div className="reference-home">
       <h1 className="sr-only">{portal.name} — últimas notícias</h1>
@@ -734,10 +921,24 @@ export function Homepage({
             );
           if (s.type === "sponsored") {
             const article = s.articleIds?.length ? picks[0] : undefined;
-            if (!article && !s.image && !s.text) return null;
+            if (!article && !s.image && !s.text && !s.videoUrl) return null;
             return (
               <section className="sponsored-strip" key={s.id}>
-                {(s.image || article?.cover_url) && (
+                {s.videoUrl && (
+                  <div className="sponsored-video">
+                    {youtubeEmbed(s.videoUrl) ? (
+                      <iframe
+                        title={s.title || "Vídeo patrocinado"}
+                        src={youtubeEmbed(s.videoUrl)}
+                        allowFullScreen
+                        loading="lazy"
+                      />
+                    ) : (
+                      <video controls src={safeLink(s.videoUrl)} />
+                    )}
+                  </div>
+                )}
+                {!s.videoUrl && (s.image || article?.cover_url) && (
                   <a
                     href={
                       article
@@ -798,7 +999,25 @@ export function Homepage({
                 <div
                   className={`ad-format ad-format-${s.adFormat || "billboard"}`}
                 >
-                  {s.image ? (
+                  {s.videoUrl ? (
+                    <AdCreative
+                      campaign={{
+                        id: s.id,
+                        name: s.title || "Publicidade",
+                        image_url: s.image || "",
+                        link: s.link || "",
+                        position: s.position || "header",
+                        active: true,
+                        starts_at: null,
+                        ends_at: null,
+                        creative: {
+                          mediaType: "video",
+                          format: s.adFormat || "auto",
+                          videoUrl: s.videoUrl,
+                        },
+                      }}
+                    />
+                  ) : s.image ? (
                     <aside className="public-ad">
                       <span>Publicidade</span>
                       <a
@@ -859,6 +1078,7 @@ export function Homepage({
               ) : portal.template === "daily" ? (
                 <div className="daily-feed">
                   <NewsGrid
+                    campaigns={campaigns}
                     articles={picks.slice(0, 30)}
                     categories={categories}
                     basePath={basePath}
@@ -879,6 +1099,7 @@ export function Homepage({
                 </div>
               ) : (
                 <NewsGrid
+                  campaigns={campaigns}
                   articles={picks.slice(0, 9)}
                   categories={categories}
                   basePath={basePath}
@@ -890,14 +1111,42 @@ export function Homepage({
         return (
           <div
             key={s.id}
-            className={`visual-section visual-width-${s.layoutWidth || "full"}`}
-            style={{
-              backgroundColor: s.backgroundColor,
-              color: s.textColor,
-              padding: s.padding ? `${s.padding}px` : undefined,
-            }}
+            className={`visual-section visual-width-${s.layoutWidth || "full"} ${s.titleColor ? "has-title-color" : ""} ${s.titleBackground ? "has-title-bg" : ""} ${s.titleSize ? "has-title-size" : ""} ${s.copyColor ? "has-copy-color" : ""} ${s.copySize ? "has-copy-size" : ""} ${s.cardBackground ? "has-card-bg" : ""}`}
+            style={
+              {
+                backgroundColor: s.backgroundColor,
+                color: s.textColor,
+                "--section-title-color": s.titleColor,
+                "--section-title-bg": s.titleBackground,
+                "--section-copy-color": s.copyColor,
+                "--section-card-bg": s.cardBackground,
+                "--section-title-size": s.titleSize
+                  ? `${s.titleSize}px`
+                  : undefined,
+                "--section-copy-size": s.copySize
+                  ? `${s.copySize}px`
+                  : undefined,
+                borderRadius: s.radius,
+                textAlign: s.align,
+                padding: s.padding ? `${s.padding}px` : undefined,
+              } as CSSProperties
+            }
           >
+            <Campaigns
+              campaigns={campaigns.filter(
+                (c) => c.creative?.sectionPlacement === "before",
+              )}
+              position="inline"
+              sectionId={s.id}
+            />
             {render()}
+            <Campaigns
+              campaigns={campaigns.filter(
+                (c) => c.creative?.sectionPlacement !== "before",
+              )}
+              position="inline"
+              sectionId={s.id}
+            />
           </div>
         );
       })}

@@ -36,8 +36,61 @@ export function presentationSettings(
     contactEnabled: true,
     newsletterEnabled: true,
     commercialText:
-      "Seja notícia no site, redes sociais e nos painéis de LED. Anuncie com a Influente Mídia.",
+      "Conecte sua marca a quem acompanha nossa publicação. Conheça nossos formatos e fale com a equipe.",
     ...s,
+    experience: {
+      navigation: {
+        layout: "horizontal",
+        background: s.color || templates[template].color,
+        color: "#ffffff",
+        logoAlign: "left",
+        ...s.experience?.navigation,
+        customColors:
+          s.experience?.navigation?.customColors ??
+          Boolean(
+            s.experience?.navigation?.background ||
+            s.experience?.navigation?.color ||
+            s.experience?.navigation?.accent,
+          ),
+      },
+      contact: {
+        mode: "compact",
+        maxWidth: 640,
+        columns: "two",
+        background: "#ffffff",
+        color: "#17342a",
+        buttonColor: s.color || templates[template].color,
+        radius: 16,
+        padding: 24,
+        messageRows: 3,
+        fields: ["phone", "subject"],
+        ...s.experience?.contact,
+      },
+      footer: {
+        layout: "columns",
+        background: "#12241e",
+        color: "#ffffff",
+        columns: 4,
+        showLogo: true,
+        showSocials: true,
+        showRss: true,
+        advertBackground: s.accentColor || templates[template].accentColor,
+        advertColor: s.color || templates[template].color,
+        ...s.experience?.footer,
+      },
+      partners: {
+        title: "Quem caminha com a gente",
+        layout: "cards",
+        columns: 4,
+        background: "#f5f8f6",
+        color: "#17342a",
+        cardBackground: "#ffffff",
+        radius: 16,
+        imageFit: "contain",
+        showNames: true,
+        ...s.experience?.partners,
+      },
+    },
   };
 }
 export function referenceSections(

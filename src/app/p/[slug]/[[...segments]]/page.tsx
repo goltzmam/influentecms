@@ -1,3 +1,5 @@
+import { campaignMatches, type PageContext } from "@/lib/experience";
+import { Campaigns } from "@/components/public-template";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -103,6 +105,28 @@ export default async function PublicPage({ params, searchParams }: Props) {
   const q = await searchParams;
   const portal = await getPublicPortal(slug);
   const data = await publicData(portal);
+  const context: PageContext = {
+    kind: !segments.length
+      ? "home"
+      : segments[0] === "noticia"
+        ? "article"
+        : segments[0] === "categoria"
+          ? "category"
+          : segments[0] === "pagina"
+            ? "page"
+            : "search",
+    slug: segments[1],
+  };
+  const routedArticle =
+    context.kind === "article"
+      ? await loadArticle(portal.id, segments[1])
+      : undefined;
+  context.categoryId =
+    routedArticle?.category_id ||
+    data.categories.find((c) => c.slug === segments[1])?.id;
+  data.campaigns = data.campaigns.filter((c) =>
+    campaignMatches(c.creative, context),
+  );
   const basePath = (await headers()).get("x-portal-host") ? "" : `/p/${slug}`;
   let body: React.ReactNode;
   if (!segments.length) {
@@ -122,7 +146,7 @@ export default async function PublicPage({ params, searchParams }: Props) {
     }
     body = <Homepage portal={portal} {...data} basePath={basePath} />;
   } else if (segments.length === 2 && segments[0] === "noticia") {
-    const article = await loadArticle(portal.id, segments[1]);
+    const article = routedArticle!;
     const base = await portalBase(portal);
     const structured = {
       "@context": "https://schema.org",
@@ -158,6 +182,7 @@ export default async function PublicPage({ params, searchParams }: Props) {
         <section className="homepage-section">
           <h2>Leia também</h2>
           <NewsGrid
+            campaigns={data.campaigns}
             articles={data.articles
               .filter((a) => a.id !== article.id)
               .slice(0, 3)}
@@ -220,6 +245,7 @@ export default async function PublicPage({ params, searchParams }: Props) {
         </div>
         {articles?.length ? (
           <NewsGrid
+            campaigns={data.campaigns}
             articles={articles as Article[]}
             categories={data.categories}
             basePath={basePath}
@@ -249,7 +275,13 @@ export default async function PublicPage({ params, searchParams }: Props) {
   } else notFound();
   return (
     <NewsShell portal={portal} {...data} basePath={basePath}>
+      {context.kind === "page" && (
+        <Campaigns campaigns={data.campaigns} position="page-top" />
+      )}
       {body}
+      {context.kind === "page" && (
+        <Campaigns campaigns={data.campaigns} position="page-bottom" />
+      )}
     </NewsShell>
   );
 }

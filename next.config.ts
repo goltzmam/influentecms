@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 const storage = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const config: NextConfig = {
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    "/api/ai/portals/create": ["./assets/fonts/**/*"],
+    "/painel/**": ["./assets/fonts/**/*"],
+  },
   experimental: { serverActions: { bodySizeLimit: "8mb" } },
   images: {
     remotePatterns: storage

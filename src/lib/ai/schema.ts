@@ -1,3 +1,9 @@
+import {
+  experienceSchema,
+  menuSchema,
+  sectionStyleSchema,
+  videoUrl,
+} from "../experience.ts";
 import { z } from "zod";
 const text = (max: number) => z.string().trim().max(max);
 const slug = z
@@ -33,12 +39,29 @@ export const referenceUrl = z
 export const briefSchema = z.object({
   brief: text(5000).min(20, "Descreva o portal com pelo menos 20 caracteres."),
   references: z.array(referenceUrl).max(3),
+  requireReferences: z.boolean().default(true),
+  referenceImages: z
+    .array(
+      z.object({
+        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+        data: z
+          .string()
+          .min(20)
+          .max(1400000)
+          .regex(/^[A-Za-z0-9+/]+={0,2}$/),
+      }),
+    )
+    .max(3)
+    .default([]),
 });
 export const blueprintShape = z.object({
   name: text(120).min(1),
   slug,
   template: z.enum(["classic", "modern", "daily"]),
   rationale: text(1200),
+  includeWelcome: z.boolean().optional(),
+  design: experienceSchema.optional(),
+  menus: z.array(menuSchema).max(15).optional(),
   identity: z.object({
     color,
     accentColor: color,
@@ -60,7 +83,48 @@ export const blueprintShape = z.object({
   sections: z
     .array(
       z.object({
-        type: z.enum(["lead", "latest", "category", "banner", "text"]),
+        type: z.enum([
+          "lead",
+          "latest",
+          "category",
+          "banner",
+          "text",
+          "video",
+          "image",
+          "sponsored",
+          "featured",
+        ]),
+        ...sectionStyleSchema,
+        backgroundColor: color.optional(),
+        textColor: color.optional(),
+        padding: z.number().int().min(0).max(80).optional(),
+        layoutWidth: z.enum(["full", "half", "third"]).optional(),
+        adFormat: z
+          .enum([
+            "billboard",
+            "leaderboard",
+            "rectangle",
+            "skyscraper",
+            "square",
+            "native",
+          ])
+          .optional(),
+        videoUrl: videoUrl.optional(),
+        image: z
+          .string()
+          .max(2000)
+          .refine((v) => !v || v.startsWith("https://"))
+          .optional(),
+        link: z
+          .string()
+          .max(2000)
+          .refine(
+            (v) =>
+              !v ||
+              v.startsWith("https://") ||
+              (v.startsWith("/") && !v.startsWith("//")),
+          )
+          .optional(),
         title: text(120),
         categorySlug: z.string().max(63),
         text: text(5000),
@@ -192,6 +256,15 @@ export function creationPayload(input: AiBlueprint) {
     slug: plan.slug,
     template: plan.template,
     settings: {
+      experience: {
+        contact: {
+          mode: "compact",
+          maxWidth: 640,
+          fields: ["phone", "subject"],
+          ...plan.design?.contact,
+        },
+        ...plan.design,
+      },
       color: i.color,
       accentColor: i.accentColor,
       surfaceColor: i.surfaceColor,
@@ -203,15 +276,17 @@ export function creationPayload(input: AiBlueprint) {
       seoDescription: i.seoDescription,
       footer: i.footer,
       header: "",
-      menusMode: "auto",
-      menus: plan.pages
-        .filter(
-          (p) =>
-            !["privacidade", "termos", "politica-de-privacidade"].includes(
-              p.slug,
-            ),
-        )
-        .map((p) => ({ label: p.title, url: `/pagina/${p.slug}` })),
+      menusMode: plan.menus?.length ? "custom" : "auto",
+      menus: plan.menus?.length
+        ? plan.menus
+        : plan.pages
+            .filter(
+              (p) =>
+                !["privacidade", "termos", "politica-de-privacidade"].includes(
+                  p.slug,
+                ),
+            )
+            .map((p) => ({ label: p.title, url: `/pagina/${p.slug}` })),
       socials: [],
       socialCards: [],
       contactEnabled: true,
@@ -225,14 +300,18 @@ export function creationPayload(input: AiBlueprint) {
     },
     categories: plan.categories,
     sections: [
-      {
-        type: "text",
-        title: i.welcomeTitle,
-        text: i.welcomeText,
-        categorySlug: "",
-        layout: "news",
-        position: "header",
-      },
+      ...(plan.includeWelcome !== false
+        ? [
+            {
+              type: "text",
+              title: i.welcomeTitle,
+              text: i.welcomeText,
+              categorySlug: "",
+              layout: "news",
+              position: "header",
+            },
+          ]
+        : []),
       ...plan.sections,
     ],
     pages: plan.pages.map((p) => ({

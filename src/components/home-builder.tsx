@@ -1,4 +1,8 @@
 "use client";
+import { ExperienceEditor, type ExperienceTab } from "./experience-editor";
+import { MenuEditor } from "./menu-editor";
+import type { Experience, MenuItem } from "@/lib/experience";
+import {campaignMatches} from "@/lib/experience";
 import { useState, type DragEvent } from "react";
 import { referenceSections, presentationSettings } from "@/lib/presentation";
 import {
@@ -38,6 +42,7 @@ function Block({
   categories,
   articles,
   portalId,
+  campaigns,
 }: {
   section: Section;
   update: (v: Section) => void;
@@ -45,6 +50,7 @@ function Block({
   categories: Category[];
   articles: Article[];
   portalId: string;
+  campaigns: Campaign[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: section.id });
@@ -84,6 +90,140 @@ function Block({
           Remover
         </button>
       </div>
+      <fieldset className="section-style-inspector" data-edit-control="title">
+        <legend>Título desta seção</legend>
+        <div className="form-columns">
+          <label>
+            Cor do título
+            <input
+              type="color"
+              aria-label="Cor do cabeçalho da seção"
+              value={section.titleColor || "#17382b"}
+              onChange={(e) =>
+                update({ ...section, titleColor: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            Fundo só do título
+            <input
+              type="color"
+              aria-label="Fundo só do título"
+              value={section.titleBackground || "#ffffff"}
+              onChange={(e) =>
+                update({ ...section, titleBackground: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            Tamanho do título
+            <input
+              type="number"
+              min="14"
+              max="72"
+              value={section.titleSize || 28}
+              onChange={(e) =>
+                update({ ...section, titleSize: Number(e.target.value) })
+              }
+            />
+          </label>
+        </div>
+        <button
+          type="button"
+          className="button-ghost small"
+          onClick={() =>
+            update({
+              ...section,
+              titleColor: undefined,
+              titleBackground: undefined,
+              titleSize: undefined,
+            })
+          }
+        >
+          Restaurar estilo do título
+        </button>
+      </fieldset>
+      <fieldset className="section-style-inspector" data-edit-control="copy">
+        <legend>Textos e cartões desta seção</legend>
+        <div className="form-columns">
+          <label>
+            Cor da copy
+            <input
+              type="color"
+              value={section.copyColor || section.textColor || "#17252a"}
+              onChange={(e) =>
+                update({ ...section, copyColor: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            Fundo dos cartões
+            <input
+              type="color"
+              value={section.cardBackground || "#ffffff"}
+              onChange={(e) =>
+                update({ ...section, cardBackground: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            Tamanho da copy
+            <input
+              type="number"
+              min="12"
+              max="36"
+              value={section.copySize || 16}
+              onChange={(e) =>
+                update({ ...section, copySize: Number(e.target.value) })
+              }
+            />
+          </label>
+          <label>
+            Alinhamento da seção
+            <select
+              value={section.align || "left"}
+              onChange={(e) =>
+                update({
+                  ...section,
+                  align: e.target.value as Section["align"],
+                })
+              }
+            >
+              <option value="left">Esquerda</option>
+              <option value="center">Centro</option>
+              <option value="right">Direita</option>
+            </select>
+          </label>
+          <label>
+            Cantos da seção
+            <input
+              type="number"
+              min="0"
+              max="40"
+              value={section.radius || 0}
+              onChange={(e) =>
+                update({ ...section, radius: Number(e.target.value) })
+              }
+            />
+          </label>
+        </div>
+        <button
+          type="button"
+          className="button-ghost small"
+          onClick={() =>
+            update({
+              ...section,
+              copyColor: undefined,
+              cardBackground: undefined,
+              copySize: undefined,
+              align: undefined,
+              radius: undefined,
+            })
+          }
+        >
+          Restaurar estilo dos textos
+        </button>
+      </fieldset>
       <label>
         Título da seção
         <input
@@ -177,6 +317,34 @@ function Block({
               </option>
             ))}
           </select>
+        </label>
+      )}
+      {section.type === "banner" && (
+        <label>
+          Usar uma campanha
+          <select
+            aria-label="Campanha desta seção"
+            value={section.campaignId || ""}
+            onChange={(e) => update({ ...section, campaignId: e.target.value })}
+          >
+            <option value="">Peça própria ou posição padrão</option>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {["banner", "sponsored"].includes(section.type) && (
+        <label>
+          Vídeo da publicidade
+          <input
+            type="url"
+            value={section.videoUrl || ""}
+            onChange={(e) => update({ ...section, videoUrl: e.target.value })}
+            placeholder="YouTube ou arquivo MP4/WebM"
+          />
         </label>
       )}
       {section.type === "category" && (
@@ -346,7 +514,7 @@ function CanvasSection({
   section: Section;
   children: React.ReactNode;
   onDrop: (event: DragEvent, id?: string) => void;
-  onEdit: () => void;
+  onEdit: (part?: string) => void;
 }) {
   const { setNodeRef, attributes, listeners, transform, transition } =
     useSortable({ id: `canvas-${section.id}` });
@@ -373,14 +541,24 @@ function CanvasSection({
         >
           ⠿ Mover
         </button>
-        <button type="button" className="button-ghost" onClick={onEdit}>
+        <button type="button" className="button-ghost" onClick={() => onEdit()}>
           Editar seção
         </button>
       </div>
       <div
         onClick={(event) => {
-          if ((event.target as HTMLElement).closest("a"))
-            event.preventDefault();
+          const target = event.target as HTMLElement;
+          if (target.closest("a")) event.preventDefault();
+          if (
+            !target.closest("button,input,select,textarea,summary,video,iframe")
+          )
+            onEdit(
+              target.closest(".block-title,.editoria-heading")
+                ? "title"
+                : target.closest("p,.editorial-text,.news-card,.daily-hero")
+                  ? "copy"
+                  : "background",
+            );
         }}
       >
         {children}
@@ -429,10 +607,29 @@ export function HomeBuilder({
   const [dropError, setDropError] = useState(""),
     [uploading, setUploading] = useState(false),
     [device, setDevice] = useState("desktop");
+  const [experience, setExperience] = useState<Experience>(
+      baseDesign.experience || {},
+    ),
+    [experienceTab, setExperienceTab] = useState<ExperienceTab>("navigation"),
+    [menus, setMenus] = useState<MenuItem[]>(baseDesign.menus || []),
+    [menusMode, setMenusMode] = useState<"auto" | "custom">(
+      baseDesign.menusMode || "auto",
+    );
+  function inspect(id: string, part = "background") {
+    const block = document.getElementById(`block-${id}`);
+    document
+      .querySelectorAll(".builder-block.is-inspecting")
+      .forEach((node) => node.classList.remove("is-inspecting"));
+    block?.classList.add("is-inspecting");
+    const control =
+      block?.querySelector(`[data-edit-control="${part}"]`) || block;
+    control?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  const previewCampaigns=campaigns.filter(campaign=>campaignMatches(campaign.creative,{kind:'home'}));
   const previewPortal = {
     ...portal,
     template,
-    settings: { ...portal.settings, ...design },
+    settings: { ...portal.settings, ...design, experience, menus, menusMode },
   };
   function add(
     type: Section["type"],
@@ -492,7 +689,7 @@ export function HomeBuilder({
       add(type as Section["type"], before);
   }
   const [sections, setSections] = useState(
-    initial.length ? initial : referenceSections(categories,portal.template),
+    initial.length ? initial : referenceSections(categories, portal.template),
   );
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -634,7 +831,7 @@ export function HomeBuilder({
                   "Substituir a composição no editor pela composição editorial? A versão pública só muda ao clicar Publicar homepage.",
                 )
               )
-                setSections(referenceSections(categories,template));
+                setSections(referenceSections(categories, template));
             }}
           >
             Usar composição editorial
@@ -642,8 +839,45 @@ export function HomeBuilder({
         </div>
         <div className="editor-grid">
           <form action={saveHomepage}>
+            <ExperienceEditor
+              portalId={portalId}
+              value={experience}
+              onChange={setExperience}
+              tab={experienceTab}
+              onTabChange={setExperienceTab}
+              name=""
+            />
+            {experienceTab === "navigation" && (
+              <section className="panel">
+                <h3>Itens e submenus</h3>
+                <label>
+                  Organização do menu
+                  <select
+                    value={menusMode}
+                    onChange={(e) =>
+                      setMenusMode(e.target.value as "auto" | "custom")
+                    }
+                  >
+                    <option value="auto">Categorias e links escolhidos</option>
+                    <option value="custom">
+                      Somente os itens que eu criar
+                    </option>
+                  </select>
+                </label>
+                <MenuEditor name="" value={menus} onChange={setMenus} />
+              </section>
+            )}
             <input type="hidden" name="portal_id" value={portalId} />
-            <input type="hidden" name="design" value={JSON.stringify(design)} />
+            <input
+              type="hidden"
+              name="design"
+              value={JSON.stringify({
+                ...design,
+                experience,
+                menus,
+                menusMode,
+              })}
+            />
             <input type="hidden" name="template" value={template} />
             <input
               type="hidden"
@@ -657,6 +891,7 @@ export function HomeBuilder({
             >
               {sections.map((section) => (
                 <Block
+                  campaigns={campaigns}
                   key={section.id}
                   section={section}
                   portalId={portalId}
@@ -720,13 +955,32 @@ export function HomeBuilder({
             )}
             <div
               className={`live-preview-stage visual-canvas ${device}`}
+              onClickCapture={(event) => {
+                const target = event.target as HTMLElement;
+                const region = target
+                  .closest("[data-edit-region]")
+                  ?.getAttribute("data-edit-region") as
+                  ExperienceTab | undefined;
+                if (
+                  region &&
+                  ["navigation", "contact", "footer", "partners"].includes(
+                    region,
+                  )
+                ) {
+                  setExperienceTab(region);
+                  document
+                    .getElementById("portal-experience-controls")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+                if (target.closest("a")) event.preventDefault();
+              }}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => void drop(event)}
             >
               <NewsShell
                 portal={previewPortal}
                 categories={categories}
-                campaigns={campaigns}
+                campaigns={previewCampaigns}
                 partners={partners}
                 basePath={`/p/${portal.slug}`}
                 preview
@@ -741,20 +995,13 @@ export function HomeBuilder({
                         key={section.id}
                         section={section}
                         onDrop={(event, id) => void drop(event, id)}
-                        onEdit={() =>
-                          document
-                            .getElementById(`block-${section.id}`)
-                            ?.scrollIntoView({
-                              behavior: "smooth",
-                              block: "center",
-                            })
-                        }
+                        onEdit={(part) => inspect(section.id, part)}
                       >
                         <Homepage
                           portal={previewPortal}
                           articles={articles}
                           categories={categories}
-                          campaigns={campaigns}
+                          campaigns={previewCampaigns}
                           basePath={`/p/${portal.slug}`}
                           sections={[{ ...section, layoutWidth: "full" }]}
                         />

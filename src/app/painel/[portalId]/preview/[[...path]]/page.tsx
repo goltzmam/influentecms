@@ -1,3 +1,4 @@
+import {campaignMatches} from "@/lib/experience";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { requirePortal } from "@/lib/portal";
@@ -20,6 +21,7 @@ export default async function Preview({
 }) {
   const { portalId, path = [] } = await params;
   const { client, portal } = await requirePortal(portalId);
+  const draftDesign=await client.rpc('get_home_design',{target:portalId});if(draftDesign.error)throw new Error('Não foi possível carregar o visual salvo.');if(draftDesign.data){portal.settings={...portal.settings,...draftDesign.data.settings};portal.template=draftDesign.data.template||portal.template;}
   const [a, c, b, p, d] = await Promise.all([
     client
       .from("articles")
@@ -62,11 +64,12 @@ export default async function Preview({
     if (error || !data) notFound();
     article = data as Article;
   } else if (path.length) notFound();
+  const visibleCampaigns=campaigns.filter(campaign=>campaignMatches(campaign.creative,{kind:article?'article':'home',slug:article?.slug,categoryId:article?.category_id||undefined}));
   return (
     <NewsShell
       portal={portal}
       categories={categories}
-      campaigns={campaigns}
+      campaigns={visibleCampaigns}
       partners={partners}
       basePath={basePath}
       preview
@@ -75,14 +78,14 @@ export default async function Preview({
         <NewsArticle
           article={article}
           category={categories.find((c) => c.id === article.category_id)}
-          campaigns={campaigns}
+          campaigns={visibleCampaigns}
         />
       ) : (
         <Homepage
           portal={portal}
           articles={articles}
           categories={categories}
-          campaigns={campaigns}
+          campaigns={visibleCampaigns}
           basePath={basePath}
           sections={d.data as Section[]}
         />
