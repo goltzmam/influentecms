@@ -42,9 +42,13 @@ export default async function Login({
           )}
           {error && (
             <p role="alert" className="notice">
-              {error === "delivery" ? "Não foi possível enviar o link agora. Peça um convite à administração ou tente novamente em instantes." : error === "access"
-                ? "Este e-mail ainda não foi autorizado para nenhum portal."
-                : "Não foi possível entrar. Confira suas credenciais e tente novamente."}
+              {error === "delivery_setup"
+                ? "O envio de e-mails ainda precisa ser ativado. Peça à administração para compartilhar um link em Copiar convite."
+                : error === "delivery"
+                  ? "Não foi possível enviar o link agora. Peça um convite à administração ou tente novamente em instantes."
+                  : error === "access"
+                    ? "Este e-mail ainda não foi autorizado para nenhum portal."
+                    : "Não foi possível entrar. Confira suas credenciais e tente novamente."}
             </p>
           )}
           {sent && (

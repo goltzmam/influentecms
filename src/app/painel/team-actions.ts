@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { requirePortal } from "@/lib/portal";
+import { mailDeliveryStatus } from "@/lib/mail-delivery";
+import { mailDeliveryMessage } from "@/lib/mail-errors";
 import { confirmationLink } from "@/lib/access-link";
 import { serviceClient } from "@/lib/supabase/service";
 export async function inviteEditor(form: FormData) {
@@ -30,6 +32,11 @@ export async function inviteEditor(form: FormData) {
       .single();
     if (row.error && row.error.code !== "23505")
       throw new Error("Não foi possível adicionar o editor. Tente novamente.");
+    const readiness = await mailDeliveryStatus();
+    if (readiness.state === "limited")
+      throw new Error(
+        "Editor salvo. O envio automático de e-mails ainda precisa ser ativado. Use Copiar convite para compartilhar o acesso.",
+      );
     const service = await serviceClient();
     const origin = process.env.APP_URL || "http://localhost:3000";
     const invited = await service.auth.admin.inviteUserByEmail(email, {
@@ -53,14 +60,30 @@ export async function inviteEditor(form: FormData) {
             emailRedirectTo: `${origin}/auth/callback?next=/painel/${auth.portal.id}`,
           },
         });
-        if (sent.error)
-          throw new Error(
-            "Editor adicionado. O envio do convite não foi concluído. Use Reenviar convite em instantes ou peça que entre pelo e-mail.",
+        if (sent.error) {
+          console.warn(
+            JSON.stringify({
+              event: "editor_email_delivery",
+              code: sent.error.code || "unknown",
+              status: sent.error.status,
+            }),
           );
-      } else
-        throw new Error(
-          "Editor adicionado. O envio por e-mail não foi concluído. Use Copiar convite para compartilhar o acesso ou tente reenviar.",
+          throw new Error(
+            mailDeliveryMessage(sent.error.code, sent.error.status),
+          );
+        }
+      } else {
+        console.warn(
+          JSON.stringify({
+            event: "editor_email_delivery",
+            code: invited.error.code || "unknown",
+            status: invited.error.status,
+          }),
         );
+        throw new Error(
+          mailDeliveryMessage(invited.error.code, invited.error.status),
+        );
+      }
     }
     message =
       "Editor adicionado. Enviamos um link de acesso por e-mail, sem necessidade de senha.";

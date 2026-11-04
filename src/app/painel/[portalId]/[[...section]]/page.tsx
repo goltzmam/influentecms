@@ -1,3 +1,4 @@
+import { mailDeliveryStatus } from "@/lib/mail-delivery";
 import { DomainConnection } from "@/components/domain-connection";
 import { refreshBrandArtwork } from "../../artwork-actions";
 import { CommercialManager } from "@/components/commercial-manager";
@@ -825,6 +826,7 @@ export default async function PortalAdmin({
     );
   } else if (key === "equipe") {
     if (!isOwner) notFound();
+    const delivery = await mailDeliveryStatus();
     const editors = check(
       await client
         .from("portal_editors")
@@ -835,6 +837,14 @@ export default async function PortalAdmin({
       <div className="editor-grid">
         <section className="panel">
           <h2>Editores deste portal</h2>
+          {delivery.state === "limited" && (
+            <p className="notice" role="status">
+              O envio automático de e-mails ainda não está ativado. Os acessos
+              podem ser compartilhados em <strong>Copiar convite</strong>.
+              Reenviar ficará disponível quando a administração concluir a
+              configuração de entrega.
+            </p>
+          )}
           {editors.length ? (
             editors.map((editor) => (
               <div className="record-line" key={editor.id}>
@@ -857,7 +867,12 @@ export default async function PortalAdmin({
                 <form action={inviteEditor}>
                   <PortalId id={portalId} />
                   <input type="hidden" name="email" value={editor.email} />
-                  <button className="button-outline">Reenviar convite</button>
+                  <button
+                    className="button-outline"
+                    disabled={delivery.state === "limited"}
+                  >
+                    Reenviar convite
+                  </button>
                 </form>
               </div>
             ))

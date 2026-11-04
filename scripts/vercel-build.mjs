@@ -3,6 +3,7 @@ function run(args){const result=spawnSync(process.execPath,args,{stdio:'inherit'
 if(process.env.VERCEL_ENV==='production'){
  if(!process.env.SUPABASE_ACCESS_TOKEN){console.error('Configure SUPABASE_ACCESS_TOKEN em Production antes de publicar.');process.exit(1);}
  run(['--use-env-proxy','scripts/release.mjs','migrate']);
+ if(process.env.GMAIL_APP_PASSWORD || process.env.RESEND_API_KEY || process.env.SMTP_PASS)run(['scripts/configure-mail-delivery.mjs']);
 }
 // Preview builds never apply migrations or bootstrap a production owner.
 run(['node_modules/next/dist/bin/next','build']);
