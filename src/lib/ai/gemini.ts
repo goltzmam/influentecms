@@ -19,6 +19,7 @@ const parseGeneratedPlan = (value: unknown) =>
 export const defaultModel = "gemini-3.6-flash";
 export class AiError extends Error {
   diagnostic?: { status: number; message: string };
+  validation?: { path: string; code: string }[];
   code: string;
   constructor(code: string, message: string) {
     super(message);
@@ -336,9 +337,17 @@ export async function generateBlueprint(
     if (!recovered) throw lastError;
   }
   let plan: AiBlueprint;
+  let validation: { path: string; code: string }[] = [];
+  const summarize = (error: unknown) =>
+    error instanceof z.ZodError
+      ? error.issues
+          .map((i) => ({ path: i.path.join("."), code: i.code }))
+          .slice(0, 30)
+      : [{ path: "response", code: "invalid_json" }];
   try {
     plan = parseGeneratedPlan(JSON.parse(result!.text));
   } catch (firstError) {
+    validation = summarize(firstError);
     if (!signal.aborted) {
       const issues =
         firstError instanceof z.ZodError
@@ -366,12 +375,16 @@ export async function generateBlueprint(
         const fixed = await call(usedModel, key, repair, fetcher, signal);
         plan = parseGeneratedPlan(JSON.parse(fixed.text));
         return { plan, model: usedModel, references, warnings };
-      } catch {}
+      } catch (repairError) {
+        validation = summarize(repairError);
+      }
     }
-    throw new AiError(
+    const failure = new AiError(
       "invalid_plan",
       "A FLUE retornou uma estrutura incompleta ou incompatível. Ajuste a descrição e gere novamente.",
     );
+    failure.validation = validation;
+    throw failure;
   }
   return { plan, model: usedModel, references, warnings };
 }
