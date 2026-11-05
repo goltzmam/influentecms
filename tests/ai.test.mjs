@@ -447,7 +447,7 @@ test("FLUE corrige uma estrutura inválida e envia capturas como dados visuais",
   assert.ok(captured.contents.at(-1).parts[0].text.includes("validação"));
 });
 
-test("FLUE exige composição visual completa e repara omissão de design", async () => {
+test("FLUE completa opções visuais omitidas com padrões editáveis sem outra requisição", async () => {
   let count = 0;
   const missing = copy();
   delete missing.design;
@@ -474,8 +474,10 @@ test("FLUE exige composição visual completa e repara omissão de design", asyn
       },
     },
   );
-  assert.equal(count, 2);
+  assert.equal(count, 1);
   assert.equal(result.plan.design.contact.mode, "compact");
+  assert.equal(result.plan.design.contact.maxWidth, 420);
+  assert.ok(result.warnings.some((w) => w.includes("padrões editáveis")));
 });
 
 test("Cota atingida ao reparar continua sendo informada como cota, sem acusar estrutura inválida", async () => {
@@ -500,4 +502,28 @@ test("Cota atingida ao reparar continua sendo informada como cota, sem acusar es
     ),
     (e) => e.code === "provider_quota",
   );
+});
+
+test("Padrões visuais respeitam menu e largura explícitos e preservam opções válidas recebidas", async () => {
+  const plan = copy();
+  plan.design = { footer: { layout: "minimal" } };
+  const result = await generateBlueprint(
+    {
+      brief:
+        "Crie um portal fitness, menu híbrido e formulário compacto de 510 px.",
+      references: [],
+    },
+    {
+      key: "test-key",
+      fetcher: async () =>
+        Response.json({
+          candidates: [
+            { content: { parts: [{ text: JSON.stringify(plan) }] } },
+          ],
+        }),
+    },
+  );
+  assert.equal(result.plan.design.navigation.layout, "hybrid");
+  assert.equal(result.plan.design.contact.maxWidth, 510);
+  assert.equal(result.plan.design.footer.layout, "minimal");
 });

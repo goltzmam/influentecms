@@ -14,8 +14,64 @@ const generatedShape = blueprintShape.extend({
     partners: designObject.shape.partners.unwrap().required({ layout: true }),
   }),
 });
-const parseGeneratedPlan = (value: unknown) =>
-  blueprintSchema.parse(generatedShape.parse(value));
+function parseGeneratedPlan(value: unknown, brief: string, warnings: string[]) {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return blueprintSchema.parse(generatedShape.parse(value));
+  const original = value as Record<string, unknown>;
+  let completed = false;
+  const fill = (input: unknown, defaults: Record<string, unknown>) => {
+    if (input === undefined) {
+      completed = true;
+      return defaults;
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input))
+      return input;
+    const source = input as Record<string, unknown>;
+    if (Object.keys(defaults).some((k) => source[k] === undefined))
+      completed = true;
+    return { ...defaults, ...source };
+  };
+  const navigation = /menu.{0,20}h[ií]brido/i.test(brief)
+    ? "hybrid"
+    : /menu.{0,20}(burger|hamb[uú]rguer)/i.test(brief)
+      ? "burger"
+      : /menu.{0,20}lateral/i.test(brief)
+        ? "sidebar"
+        : original.template === "daily"
+          ? "hybrid"
+          : "horizontal";
+  const requested = brief.match(
+    /formul[aá]rio[^\n]{0,55}?([0-9]{3,4})\s*(?:px|pixels)/i,
+  );
+  const maxWidth = requested
+    ? Math.max(280, Math.min(1200, Number(requested[1])))
+    : 420;
+  const provided = original.design === undefined ? {} : original.design;
+  let design: unknown = provided;
+  if (provided && typeof provided === "object" && !Array.isArray(provided)) {
+    const source = provided as Record<string, unknown>;
+    design = {
+      ...source,
+      navigation: fill(source.navigation, { layout: navigation }),
+      contact: fill(source.contact, { mode: "compact", maxWidth }),
+      footer: fill(source.footer, { layout: "columns" }),
+      partners: fill(source.partners, { layout: "cards" }),
+    };
+  }
+  const plan = blueprintSchema.parse(
+    generatedShape.parse({ ...original, design }),
+  );
+  if (
+    completed &&
+    !warnings.includes(
+      "Opções visuais ausentes foram completadas com padrões editáveis.",
+    )
+  )
+    warnings.push(
+      "Opções visuais ausentes foram completadas com padrões editáveis.",
+    );
+  return plan;
+}
 export const defaultModel = "gemini-3.6-flash";
 export class AiError extends Error {
   diagnostic?: { status: number; message: string };
@@ -345,7 +401,7 @@ export async function generateBlueprint(
           .slice(0, 30)
       : [{ path: "response", code: "invalid_json" }];
   try {
-    plan = parseGeneratedPlan(JSON.parse(result!.text));
+    plan = parseGeneratedPlan(JSON.parse(result!.text), input.brief, warnings);
   } catch (firstError) {
     validation = summarize(firstError);
     if (!signal.aborted) {
@@ -373,7 +429,11 @@ export async function generateBlueprint(
       };
       try {
         const fixed = await call(usedModel, key, repair, fetcher, signal);
-        plan = parseGeneratedPlan(JSON.parse(fixed.text));
+        plan = parseGeneratedPlan(
+          JSON.parse(fixed.text),
+          input.brief,
+          warnings,
+        );
         return { plan, model: usedModel, references, warnings };
       } catch (repairError) {
         if (
