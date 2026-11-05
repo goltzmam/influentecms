@@ -376,6 +376,11 @@ export async function generateBlueprint(
         plan = parseGeneratedPlan(JSON.parse(fixed.text));
         return { plan, model: usedModel, references, warnings };
       } catch (repairError) {
+        if (
+          repairError instanceof AiError &&
+          ["provider_quota", "provider_auth"].includes(repairError.code)
+        )
+          throw repairError;
         validation = summarize(repairError);
       }
     }

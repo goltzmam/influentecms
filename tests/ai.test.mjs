@@ -477,3 +477,27 @@ test("FLUE exige composição visual completa e repara omissão de design", asyn
   assert.equal(count, 2);
   assert.equal(result.plan.design.contact.mode, "compact");
 });
+
+test("Cota atingida ao reparar continua sendo informada como cota, sem acusar estrutura inválida", async () => {
+  let count = 0;
+  await assert.rejects(
+    generateBlueprint(
+      {
+        brief: "Crie um portal editorial completo com menus e imagens.",
+        references: [],
+      },
+      {
+        key: "test-key",
+        fetcher: async () =>
+          ++count === 1
+            ? Response.json({
+                candidates: [
+                  { content: { parts: [{ text: '{"name":"incompleto"}' }] } },
+                ],
+              })
+            : Response.json({}, { status: 429 }),
+      },
+    ),
+    (e) => e.code === "provider_quota",
+  );
+});

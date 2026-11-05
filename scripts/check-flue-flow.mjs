@@ -89,25 +89,48 @@ try {
     .png()
     .toBuffer();
   stage = "generation";
-  const generated = await fetch(origin + "/api/ai/portals/generate", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      brief:
-        "Crie um portal editorial de fitness chamado SaudeFIT, com foco em movimento para iniciantes e hábitos saudáveis, páginas Sobre e Contato e textos atemporais em rascunho. Use a captura anexada como referência de paleta verde e composição. Configure design com menu híbrido, formulário compacto de 420 px, rodapé com chamada comercial https://example.com/anuncie e cartões de parceiros. Separe cores dos títulos e copy por seção.",
-      references: [],
-      requireReferences: true,
-      referenceImages: [
-        { mimeType: "image/png", data: screenshot.toString("base64") },
-      ],
-    }),
-    signal: AbortSignal.timeout(270000),
-  });
-  const project = await generated.json();
-  check(
-    generated.ok,
-    `Generation HTTP ${generated.status}: ${project.code || "failed"}`,
-  );
+  const fixtureMode = process.argv.includes("--fixture");
+  let project;
+  if (fixtureMode) {
+    const { blueprint } = await import("../tests/fixtures/ai-blueprint.mjs");
+    const started = await owner.rpc("start_portal_ai_job", {
+      p_organization: organizationId,
+      p_brief:
+        "Estrutura controlada para verificar composição visual e métricas.",
+      p_references: [],
+    });
+    check(!started.error, "Temporary blueprint job failed");
+    const saved = await owner.rpc("finish_portal_ai_job", {
+      p_job: started.data,
+      p_plan: blueprint,
+      p_model: "controlled-validation",
+      p_references: [],
+      p_warnings: [],
+      p_failed: false,
+    });
+    check(!saved.error, "Temporary blueprint save failed");
+    project = { jobId: started.data, plan: blueprint, references: [] };
+  } else {
+    const generated = await fetch(origin + "/api/ai/portals/generate", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        brief:
+          "Crie um portal editorial de fitness chamado SaudeFIT, com foco em movimento para iniciantes e hábitos saudáveis, páginas Sobre e Contato e textos atemporais em rascunho. Use a captura anexada como referência de paleta verde e composição. Configure design com menu híbrido, formulário compacto de 420 px, rodapé com chamada comercial https://example.com/anuncie e cartões de parceiros. Separe cores dos títulos e copy por seção.",
+        references: [],
+        requireReferences: true,
+        referenceImages: [
+          { mimeType: "image/png", data: screenshot.toString("base64") },
+        ],
+      }),
+      signal: AbortSignal.timeout(270000),
+    });
+    project = await generated.json();
+    check(
+      generated.ok,
+      `Generation HTTP ${generated.status}: ${project.code || "failed"}`,
+    );
+  }
   check(
     project.jobId && project.plan?.categories?.length >= 2,
     "Generated structure missing",
@@ -286,10 +309,13 @@ try {
   check(published.ok, "Public portal unavailable");
   console.log(
     JSON.stringify({
-      check: "FLUE live authenticated flow",
+      check: fixtureMode
+        ? "FLUE visual composition from controlled blueprint"
+        : "FLUE live authenticated flow",
       status: "PASS",
       references: project.references.map((r) => r.status),
-      screenshotReference: true,
+      screenshotReference: !fixtureMode,
+      liveTextGenerationTested: !fixtureMode,
       editableExperience: !!plan.design,
       categories: plan.categories.length,
       sections: plan.sections.length,
@@ -304,7 +330,9 @@ try {
 } catch (error) {
   console.error(
     JSON.stringify({
-      check: "FLUE live authenticated flow",
+      check: fixtureMode
+        ? "FLUE visual composition from controlled blueprint"
+        : "FLUE live authenticated flow",
       status: "FAIL",
       stage,
       message: error.message,
