@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAccess } from "@/lib/auth";
+import { AdminShell } from "@/components/admin-shell";
 import { AdminNav } from "@/components/admin-nav";
 export const dynamic = "force-dynamic";
 export default async function AdminLayout({
@@ -19,30 +20,29 @@ export default async function AdminLayout({
   const { data, error } = await portalsQuery;
   if (error) throw new Error("Não foi possível carregar os portais.");
   return (
-    <div className="dashboard">
-      <aside className="sidebar">
-        <Link className="brand" href="/painel">
-          influente<span>●</span>
-        </Link>
-        <AdminNav portals={data || []} isOwner={isOwner} />
-        <div className="sidebar-footer">
-          <span className="status-dot" />
-          Workspace privado
-          <form action="/auth/signout" method="post">
-            <button className="logout">Sair da conta</button>
-          </form>
-        </div>
-      </aside>
-      <main className="main">
-        <header>
-          <span>
-            Influente Comunicação{" "}
-            <span className="muted">/ Central editorial</span>
-          </span>
-          <span className="user-email">{user.email}</span>
-        </header>
-        <div className="content">{children}</div>
-      </main>
-    </div>
+    <AdminShell
+      email={user.email || ""}
+      isOwner={isOwner}
+      sidebar={
+        <>
+          <Link className="brand" href="/painel">
+            <span className="brand-emblem">i</span>
+            <span className="brand-wordmark">
+              influente<small>CMS · CENTRAL EDITORIAL</small>
+            </span>
+          </Link>
+          <AdminNav portals={data || []} isOwner={isOwner} />
+          <div className="sidebar-footer">
+            <span className="status-dot" />
+            Workspace privado
+            <form action="/auth/signout" method="post">
+              <button className="logout">Sair da conta</button>
+            </form>
+          </div>
+        </>
+      }
+    >
+      {children}
+    </AdminShell>
   );
 }

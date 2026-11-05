@@ -1,3 +1,4 @@
+import { PortalDeletion } from "@/components/portal-deletion";
 import { mailDeliveryStatus } from "@/lib/mail-delivery";
 import { DomainConnection } from "@/components/domain-connection";
 import { refreshBrandArtwork } from "../../artwork-actions";
@@ -37,7 +38,12 @@ import {
   addDomain,
   deleteDomain,
 } from "../../actions";
+export const maxDuration = 300;
 const titles: Record<string, [string, string]> = {
+  configuracoes: [
+    "Configurações do portal",
+    "Identidade, endereços e controle do seu portal.",
+  ],
   noticias: ["Notícias", "Da primeira ideia à publicação."],
   categorias: ["Categorias", "Organize a navegação editorial do seu portal."],
   homepage: [
@@ -114,6 +120,7 @@ export default async function PortalAdmin({
   const key = section[0] || "";
   if (key === "preview") notFound();
   if (key && !titles[key]) notFound();
+  if (key === "configuracoes" && !isOwner) notFound();
   const base = `/painel/${portalId}`;
   const heading = titles[key] || [portal.name, "Sua redação, em movimento."];
   let body: React.ReactNode;
@@ -181,6 +188,34 @@ export default async function PortalAdmin({
           )}
         </section>
       </>
+    );
+  } else if (key === "configuracoes") {
+    body = (
+      <div className="portal-settings-stack">
+        <section className="panel portal-settings-summary">
+          <span className="eyebrow">SEU PORTAL</span>
+          <h2>{portal.name}</h2>
+          <p className="muted">/p/{portal.slug}</p>
+          <div className="settings-shortcuts">
+            <Link href={`${base}/aparencia`}>
+              Identidade e personalização →
+            </Link>
+            <Link href={`${base}/dominios`}>Endereços e domínios →</Link>
+            <Link href={`${base}/equipe`}>Pessoas e permissões →</Link>
+          </div>
+        </section>
+        <section className="panel danger-zone">
+          <div>
+            <span className="eyebrow">GERENCIAMENTO DO PORTAL</span>
+            <h2>Excluir portal</h2>
+            <p>
+              Remova este portal e seus conteúdos permanentemente. Os outros
+              portais da sua conta continuam disponíveis.
+            </p>
+          </div>
+          <PortalDeletion id={portal.id} name={portal.name} />
+        </section>
+      </div>
     );
   } else if (key === "noticias") {
     const categories = check(

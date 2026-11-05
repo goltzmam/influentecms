@@ -16,6 +16,8 @@ import {
   ExternalLink,
   Sparkles,
   ChartNoAxesCombined,
+  Users,
+  SlidersHorizontal,
 } from "lucide-react";
 export function AdminNav({
   portals,
@@ -40,8 +42,17 @@ export function AdminNav({
     ["metricas", "Métricas comerciais", ChartNoAxesCombined],
     ["paginas", "Páginas", FileText],
     ["dominios", "Domínios", Globe2],
-    ...(isOwner ? [["equipe", "Equipe", Handshake] as const] : []),
-    ["leitores", "Leitores e contato", Handshake],
+    ...(isOwner ? [["equipe", "Equipe", Users] as const] : []),
+    ["leitores", "Leitores e contato", Users],
+    ...(isOwner
+      ? [
+          [
+            "configuracoes",
+            "Configurações do portal",
+            SlidersHorizontal,
+          ] as const,
+        ]
+      : []),
   ] as const;
   return (
     <>
@@ -62,8 +73,12 @@ export function AdminNav({
           </option>
         ))}
       </select>
-      <nav className="admin-links">
-        <Link className={path === "/painel" ? "nav-active" : ""} href="/painel">
+      <nav className="admin-links" aria-label="Seções do painel">
+        <Link
+          aria-current={path === "/painel" ? "page" : undefined}
+          className={path === "/painel" ? "nav-active" : ""}
+          href="/painel"
+        >
           <LayoutDashboard size={17} />
           Dashboard geral
         </Link>
@@ -82,6 +97,11 @@ export function AdminNav({
             {links.map(([slug, label, Icon]) => (
               <Link
                 key={slug}
+                aria-current={
+                  path === `/painel/${portal.id}${slug ? "/" + slug : ""}`
+                    ? "page"
+                    : undefined
+                }
                 className={
                   path === `/painel/${portal.id}${slug ? "/" + slug : ""}`
                     ? "nav-active"
