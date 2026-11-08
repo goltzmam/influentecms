@@ -1,3 +1,4 @@
+import {CloneFrame} from "@/components/clone-frame";
 import { campaignMatches, type PageContext } from "@/lib/experience";
 import { Campaigns } from "@/components/public-template";
 import type { Metadata } from "next";
@@ -42,6 +43,7 @@ export async function generateMetadata({
     description = p.settings.seoDescription || p.settings.description || "",
     image = p.settings.ogImage || p.settings.logo;
   let canonical = base;
+  if(segments[0]==="original") canonical=`${base}/original/${segments.slice(1).map(encodeURIComponent).join("/")}`;
   const search = await searchParams;
   if (segments[0] === "noticia" && segments[1]) {
     const a = await loadArticle(p.id, segments[1]);
@@ -104,6 +106,11 @@ export default async function PublicPage({ params, searchParams }: Props) {
   const { slug, segments = [] } = await params;
   const q = await searchParams;
   const portal = await getPublicPortal(slug);
+  if(portal.settings.cloneDocumentId && segments[0]==="original") {
+    const basePath=(await headers()).get("x-portal-host")?"":`/p/${slug}`;
+    const sourcePath="/"+segments.slice(1).join("/")+new URLSearchParams(Object.entries(q).filter(([,v])=>typeof v==="string").map(([k,v])=>[k,String(v)])).toString().replace(/^(.+)$/,"?$1");
+    return <CloneFrame src={`${basePath}/clone?sourcePath=${encodeURIComponent(sourcePath)}`} title={portal.name} />;
+  }
   const data = await publicData(portal);
   const context: PageContext = {
     kind: !segments.length

@@ -1,0 +1,6 @@
+import{createClient}from'@supabase/supabase-js';import{seedCloneCatalog,processClonePages}from'../src/lib/clone/catalog.ts';
+const client=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
+try{const rows=await client.from('portal_clone_documents').select('portal_id,source_url').not('portal_id','is',null);if(rows.error)throw Error('lookup');let portals=0,imported=0;
+for(const row of rows.data||[]){if(!['juremanews.com.br','www.juremanews.com.br'].includes(new URL(row.source_url).hostname))continue;await seedCloneCatalog(client,row.portal_id);for(let i=0;i<4;i++){const result=await processClonePages(client,row.portal_id,undefined,{limit:3});imported+=result.imported;}portals++;}
+const count=await client.from('portal_clone_pages').select('id',{count:'exact',head:true}).eq('status','ready').eq('kind','page');const pending=await client.from('portal_clone_pages').select('id',{count:'exact',head:true}).in('status',['pending','processing']);console.log(JSON.stringify({check:'Clone internal navigation catalog',status:'PASS',portals,imported,ready:count.count,pending:pending.count}));
+}catch(error){console.log(JSON.stringify({check:'Clone internal navigation catalog',status:'FAIL',code:error?.code||error?.name||'unknown'}));process.exitCode=1;}
