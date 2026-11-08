@@ -55,6 +55,7 @@ export function WidgetEditor({
   const check = (key: string, label: string, fallback = true) => (
     <label className="check-label">
       <input
+        aria-label={label}
         type="checkbox"
         checked={Boolean(c[key] ?? fallback)}
         onChange={(e) => onChange(key, e.target.checked)}
@@ -64,7 +65,7 @@ export function WidgetEditor({
   );
   return (
     <div className="widget-controls">
-      {check("enabled", "Exibir este bloco")}
+      {check("enabled", kind === "search" ? "Ativar busca no portal" : "Exibir este bloco")}
       <div className="form-columns">
         <label>
           Local do bloco
@@ -220,8 +221,14 @@ export function WidgetEditor({
                   <option value="filled">Caixa preenchida</option>
                   <option value="minimal">Linha discreta</option>
                   <option value="pill">Cantos arredondados</option>
+                  <option value="card">Cartão editorial</option>
                 </select>
               </label>
+              <p className="field-hint">As alterações valem para este portal em todos os dispositivos. Salve para publicar. No celular, toque na lupa para abrir um campo amplo.</p>
+              {field("title", "Título da busca")}
+              {field("description", "Descrição da busca")}
+              <label>Estrutura da busca<select aria-label="Estrutura da busca" value={String(c.layout ?? "inline")} onChange={(e) => onChange("layout", e.target.value)}><option value="inline">Campo e botão lado a lado</option><option value="stacked">Botão abaixo do campo</option></select></label>
+              <label>Formato do botão<select aria-label="Formato do botão" value={String(c.buttonMode ?? "text")} onChange={(e) => onChange("buttonMode", e.target.value)}><option value="text">Texto</option><option value="icon">Ícone de lupa</option><option value="both">Ícone e texto</option></select></label>
               {check("customStyle", "Personalizar cores da busca", false)}
               {field(
                 "placeholder",
@@ -229,7 +236,8 @@ export function WidgetEditor({
                 "O que você procura?",
               )}
               {field("buttonLabel", "Texto do botão de busca", "Buscar")}
-              {field("height", "Altura da busca", "40", "number")}
+              {field("height", "Altura da busca", "44", "number")}
+              {field("inputBorder", "Cor da borda do campo", "#dce4dd", "color")}
             </>
           )}
         </>

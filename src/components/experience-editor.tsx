@@ -240,6 +240,7 @@ export function ExperienceEditor({
       {tab === "navigation" && (
         <div role="tabpanel">
           <h3>Navegação que combina com seu portal</h3>
+          <button type="button" className="button secondary" onClick={() => { setTab("search"); onTabChange?.("search"); }}>Configurar busca: ativar, textos e design</button>
           <MediaInput
             portalId={portalId}
             name="header-logo-control"

@@ -78,17 +78,20 @@ export function PortalWidget({
           aria-expanded={searchOpen}
           onClick={() => {
             setSearchOpen(!searchOpen);
-            requestAnimationFrame(() => searchInput.current?.focus());
+            if (!searchOpen) setTimeout(() => searchInput.current?.focus(), 50);
           }}
         >
           {searchOpen ? <X size={21} /> : <Search size={21} />}
         </button>
-        <form
-          className={`public-search configurable-search search-preset-${search?.preset ?? "outline"}`}
+        <div className={`search-panel search-panel-${search?.preset ?? "outline"}`} style={{background: search?.background, color: search?.color, borderRadius: search?.radius}}>
+          {search?.title && <strong className="search-title">{search.title}</strong>}
+          {search?.description && <p className="search-description">{search.description}</p>}
+        <form role="search" aria-label="Busca do portal"
+          className={`public-search configurable-search search-preset-${search?.preset ?? "outline"} search-layout-${search?.layout ?? "inline"}`}
           action={`${basePath}/busca`}
           style={
             {
-              "--search-height": `${search?.height ?? 40}px`,
+              "--search-height": `${search?.height ?? 44}px`,
               "--search-input-bg": search?.customStyle
                 ? search.inputBackground
                 : undefined,
@@ -114,10 +117,15 @@ export function PortalWidget({
             name="q"
             required
             placeholder={search?.placeholder ?? "O que você procura?"}
+            autoComplete="off"
+            enterKeyHint="search"
             disabled={preview}
           />
-          <button disabled={preview}>{search?.buttonLabel ?? "Buscar"}</button>
-        </form>
+          <button disabled={preview} aria-label={search?.buttonLabel || "Buscar"}>
+            {search?.buttonMode !== "text" && search?.buttonMode && <Search size={18} aria-hidden="true" />}
+            {search?.buttonMode !== "icon" && (search?.buttonLabel || "Buscar")}
+          </button>
+        </form></div>
       </>
     );
   } else if (kind === "contact")

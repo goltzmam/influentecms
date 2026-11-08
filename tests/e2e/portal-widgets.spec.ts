@@ -153,6 +153,12 @@ test("Blocos editáveis: copy salva, busca, logos distintos, posições, imagem 
   await page
     .getByLabel("Texto do botão de busca", { exact: true })
     .fill("Pesquisar");
+  await page.getByLabel("Título da busca", {exact:true}).fill("Encontre notícias");
+  await page.getByLabel("Descrição da busca", {exact:true}).fill("Explore nossas editorias");
+  await page.getByLabel("Formato do botão", {exact:true}).selectOption("both");
+  await page.getByLabel("Estrutura da busca", {exact:true}).selectOption("stacked");
+  await page.getByLabel("Ativar busca no portal", {exact:true}).uncheck();
+  await page.getByLabel("Ativar busca no portal", {exact:true}).check();
   await page
     .getByRole("button", { name: "Salvar personalização", exact: true })
     .click();
@@ -166,6 +172,10 @@ test("Blocos editáveis: copy salva, busca, logos distintos, posições, imagem 
       .eq("id", portal)
       .single()
   ).data!;
+  expect(saved.settings.experience.search.title).toBe("Encontre notícias");
+  expect(saved.settings.experience.search.layout).toBe("stacked");
+  expect(saved.settings.experience.search.buttonMode).toBe("both");
+  expect(saved.settings.experience.search.enabled).toBe(true);
   expect(saved.settings.experience.commercial.body).toBe(
     "Sua marca encontra nosso público aqui.",
   );
@@ -426,7 +436,7 @@ test("Cabeçalho compacto: menu burger, horizontal, oculto, busca com presets e 
       await page.screenshot({ path: "/tmp/influente-header-compact.png" });
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(header).toHaveAttribute("data-header-compact", "false");
-    for (const preset of ["outline", "filled", "minimal", "pill"]) {
+    for (const preset of ["outline", "filled", "minimal", "pill", "card"]) {
       settings.experience.search.preset = preset;
       await admin.from("portals").update({ settings }).eq("id", portal);
       await page.reload();
@@ -465,7 +475,18 @@ test("Cabeçalho compacto: menu burger, horizontal, oculto, busca com presets e 
       .getByRole("button", { name: "Abrir busca", exact: true })
       .click();
     await expect(header.getByPlaceholder("Pesquisar notícias")).toBeVisible();
-    await header.getByPlaceholder("Pesquisar notícias").fill("rotina");
+    for (const width of [320, 390, 760]) {
+      await page.setViewportSize({width, height:844});
+      const field = header.getByPlaceholder("Pesquisar notícias");
+      expect(await field.evaluate(el => el.getBoundingClientRect().width), template + " input at " + width).toBeGreaterThan(width === 320 ? 140 : 190);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
+    }
+    await page.setViewportSize({width:390, height:844});
+    const mobileInput = header.getByPlaceholder("Pesquisar notícias");
+    expect(await mobileInput.evaluate(el => el.getBoundingClientRect().width)).toBeGreaterThan(190);
+    expect(await mobileInput.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
+    await expect(mobileInput).toBeFocused();
+    await mobileInput.fill("rotina");
     await header.getByRole("button", { name: "Buscar", exact: true }).click();
     await expect(page).toHaveURL(/\/busca\?q=rotina/);
     expect(

@@ -1342,3 +1342,11 @@
     padding: 14px;
   }
 }
+
+@media (max-width: 760px) {
+  .widget-controls input:not([type="checkbox"]):not([type="color"]),
+  .widget-controls select,
+  .widget-controls textarea { font-size: 16px; min-height: 44px; width: 100%; min-width: 0; box-sizing: border-box; }
+  .widget-controls .form-columns { grid-template-columns: minmax(0, 1fr); }
+  .widget-controls .check-label { min-height: 44px; gap: 10px; }
+}

@@ -236,6 +236,7 @@
 }
 .reference-site .header-adaptive .daily-search,
 .reference-site .header-adaptive .magazine-search {
+  position: static;
   grid-column: 3;
   grid-row: 1;
   min-width: 0;
@@ -656,4 +657,58 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Shared search editor and public templates: keep the mobile panel anchored to
+   the header, rather than the 42px icon widget. */
+.reference-site .widget-search .search-panel { width: 100%; min-width: 0; }
+.reference-site .widget-search .search-title { display: block; font-size: 16px; line-height: 1.4; margin-bottom: 6px; color: inherit; }
+.reference-site .widget-search .search-description { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: inherit; }
+.reference-site .widget-search .search-panel-card { padding: 16px; border: 1px solid #dce4dd; border-radius: 14px; background: #f5f7f4; color: #17342a; }
+.reference-site .widget-search .configurable-search { box-sizing: border-box; gap: 0; }
+.reference-site .widget-search .configurable-search input { box-sizing: border-box; font-size: 16px !important; min-height: 44px; }
+.reference-site .widget-search .configurable-search button { display: inline-flex; justify-content: center; align-items: center; gap: 7px; min-height: 44px; font-size: 14px !important; border: 0; cursor: pointer; }
+.reference-site .widget-search .configurable-search :focus-visible { outline: 2px solid var(--portal-color, #285c45); outline-offset: 3px; }
+.reference-site .widget-search .search-layout-stacked { flex-direction: column; gap: 8px; }
+.reference-site .widget-search .search-layout-stacked button { max-width: 100%; width: 100% !important; }
+.reference-site .widget-search .search-layout-stacked input { flex: auto; }
+.reference-site .widget-search .search-preset-card { gap: 8px; }
+.reference-site .widget-search .search-preset-card input,
+.reference-site .widget-search .search-preset-card button { border-radius: 8px; }
+@media (max-width: 760px) {
+  .reference-site .header-adaptive .widget-search[data-edit-region] { position: static; }
+  .reference-site .header-adaptive .widget-search .search-panel { display: none; }
+  .reference-site .header-adaptive .widget-search[data-search-open="true"] .search-panel {
+    display: block; position: absolute; z-index: 30; left: 12px; right: 12px;
+    top: calc(100% + 4px); width: auto; max-width: none; box-sizing: border-box;
+    padding: 12px; background: #fff; color: #17342a; border: 1px solid #dce4dd;
+    border-radius: 12px; box-shadow: 0 12px 32px #00000024;
+  }
+  .reference-site .header-adaptive .widget-search[data-search-open="true"] .search-panel .configurable-search {
+    display: flex; position: static; width: 100%; max-width: 100%; padding: 0;
+    box-shadow: none; background: transparent; border-radius: 0; margin: 0;
+  }
+  .reference-site .header-adaptive .widget-search .configurable-search input { width: 0; flex: 1 1 0%; padding: 10px; }
+  .reference-site .header-adaptive .widget-search .search-layout-stacked input { width: 100%; flex: auto; }
+  .reference-site .header-adaptive .widget-search .configurable-search button { min-width: 44px; max-width: 45%; padding: 10px 12px; }
+  .reference-site .header-adaptive .widget-search .search-layout-stacked button { max-width: 100%; }
+}
+
+@container portal-preview (max-width:760px) {
+  .reference-site .header-adaptive .widget-search[data-edit-region] { position: static; }
+  .reference-site .header-adaptive .widget-search .search-panel { display: none; }
+  .reference-site .header-adaptive .widget-search[data-search-open="true"] .search-panel {
+    display: block; position: absolute; z-index: 30; left: 12px; right: 12px;
+    top: calc(100% + 4px); width: auto; max-width: none; box-sizing: border-box;
+    padding: 12px; background: #fff; color: #17342a; border: 1px solid #dce4dd;
+    border-radius: 12px; box-shadow: 0 12px 32px #00000024;
+  }
+  .reference-site .header-adaptive .widget-search[data-search-open="true"] .search-panel .configurable-search {
+    display: flex; position: static; width: 100%; max-width: 100%; padding: 0;
+    box-shadow: none; background: transparent; border-radius: 0; margin: 0;
+  }
+  .reference-site .header-adaptive .widget-search .configurable-search input { width: 0; flex: 1 1 0%; padding: 10px; }
+  .reference-site .header-adaptive .widget-search .search-layout-stacked input { width: 100%; flex: auto; }
+  .reference-site .header-adaptive .widget-search .configurable-search button { min-width: 44px; max-width: 45%; padding: 10px 12px; }
+  .reference-site .header-adaptive .widget-search .search-layout-stacked button { max-width: 100%; }
 }

@@ -159,7 +159,11 @@ export const experienceSchema = z
       .optional(),
     search: widgetPlacementSchema
       .extend({
-        preset: z.enum(["outline", "filled", "minimal", "pill"]).optional(),
+        preset: z.enum(["outline", "filled", "minimal", "pill", "card"]).optional(),
+        buttonMode: z.enum(["text", "icon", "both"]).optional(),
+        layout: z.enum(["inline", "stacked"]).optional(),
+        title: text(120).optional(),
+        description: text(300).optional(),
         customStyle: z.boolean().optional(),
         placeholder: text(200).optional(),
         buttonLabel: text(80).optional(),
