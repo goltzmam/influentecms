@@ -50,3 +50,13 @@ test('IDs de menus persistem quando botão é inserido antes do elemento origina
  const doc=sanitizeDocument({sourceUrl:'https://example.com',bodyClass:'',css:'',html:'<header data-clone-node="n1"><button data-clone-menu-toggle="n2">Menu</button><nav data-clone-node="n2" data-clone-menu-layout="burger">Links</nav></header>'});
  assert.match(doc.html,/<nav data-clone-node="n2"/);assert.match(doc.html,/data-clone-menu-toggle="n2"/);const ids=[...doc.html.matchAll(/data-clone-node="(n\d+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
 });
+
+test('Imagens do clone são convertidas para WebP aceito pela biblioteca e não são recopiadas',async()=>{
+ const sharp=(await import('sharp')).default;const {mirrorCloneImages}=await import('../src/lib/clone/mirror.ts');
+ const original=await sharp({create:{width:32,height:20,channels:3,background:'#cc1122'}}).jpeg().toBuffer();const writes=[];
+ const bucket={getPublicUrl:path=>({data:{publicUrl:'https://media.example/storage/v1/object/public/portal-media/'+path}}),upload:async(path,bytes,options)=>{writes.push({path,bytes,options});return {error:null};},remove:async()=>({error:null})};
+ const client={storage:{from:()=>bucket},from:()=>({select:()=>({eq:async()=>({data:[],error:null})}),insert:async()=>({error:null})})};
+ const doc={sourceUrl:'https://example.com',bodyClass:'',css:'',html:'<img src="https://example.com/foto.jpg"><img src="https://media.example/storage/v1/object/public/portal-media/org/portal/ja-copiada.webp">'};
+ const result=await mirrorCloneImages(client,'org','portal',doc,async url=>({url,type:'image/jpeg',bytes:original}));
+ assert.equal(writes.length,1);assert.equal(writes[0].options.contentType,'image/webp');assert.equal((await sharp(writes[0].bytes).metadata()).format,'webp');assert.equal(result.document.assetVersion,2);assert.ok(result.document.html.includes('/org/portal/'));assert.equal(result.warnings.length,0);
+});

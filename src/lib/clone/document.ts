@@ -5,7 +5,7 @@ import { z } from "zod";
 import { referenceUrl } from "../ai/schema.ts";
 import { readPublicResource } from "./web.ts";
 const documentPageSchema=z.object({path:z.string().max(160),sourceUrl:referenceUrl,html:z.string().max(800000),css:z.string().max(180000),bodyClass:z.string().max(2000)});
-export const cloneDocumentSchema=z.object({pages:z.array(documentPageSchema).max(12).optional(),html:z.string().max(2500000),css:z.string().max(1800000),bodyClass:z.string().max(2000),sourceUrl:referenceUrl});
+export const cloneDocumentSchema=z.object({assetVersion:z.number().int().optional(),pages:z.array(documentPageSchema).max(12).optional(),html:z.string().max(2500000),css:z.string().max(1800000),bodyClass:z.string().max(2000),sourceUrl:referenceUrl});
 export type CloneDocument=z.infer<typeof cloneDocumentSchema>;
 const absolute=(value:string,base:string)=>{try{const url=new URL(value,base);if(url.protocol==="http:")url.protocol="https:";return referenceUrl.safeParse(url.href).success?url.href:"";}catch{return "";}};
 export function rewriteCss(css:string,base:string){return css.replace(/url\(\s*(['"]?)(.*?)\1\s*\)/gi,(_m,_q,value)=> value.startsWith("data:")?`url("${value.replaceAll('"','%22')}")`:`url("${absolute(value,base).replaceAll('"','%22')}")`).replace(/@import\s+(['"])(.*?)\1/gi,(_m,_q,value)=>`@import url("${absolute(value,base)}")`).replace(/<\/?style/gi," ");}
