@@ -475,6 +475,12 @@ export default async function PortalAdmin({
               </p>
             </section>
             <AppearanceDetails portalId={portalId} settings={s} />
+            {portal.settings.cloneDocumentId ? <>
+              <input type="hidden" name="experience" value={JSON.stringify(s.experience || {})} />
+              <input type="hidden" name="menus" value={JSON.stringify(s.menus || [])} />
+              <input type="hidden" name="menusMode" value={s.menusMode || "auto"} />
+              <p className="notice">Os menus e o rodapé deste portal são editados no layout original. <Link href={`${base}/homepage`}>Abrir editor visual →</Link></p>
+            </> : <>
             <ExperienceEditor
               key={JSON.stringify(s.experience)}
               portalId={portalId}
@@ -500,6 +506,7 @@ export default async function PortalAdmin({
               </label>
               <MenuEditor key={JSON.stringify(s.menus)} name="menus" value={s.menus} />
             </section>
+            </>}
             <section className="panel">
               <h2>Redes sociais</h2>
               <LinksEditor name="socials" value={s.socials} />
