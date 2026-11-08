@@ -2,7 +2,7 @@ import { z } from "zod";
 import { blueprintSchema, blueprintShape, type AiBlueprint } from "./schema.ts";
 import { experienceSchema } from "../experience.ts";
 const designObject = experienceSchema.unwrap();
-const generatedShape = blueprintShape.extend({
+const generatedShape = blueprintShape.omit({clone:true}).extend({
   design: designObject.extend({
     navigation: designObject.shape.navigation
       .unwrap()

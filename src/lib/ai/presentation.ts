@@ -27,6 +27,16 @@ export async function completeAiPresentation(
   const draft = await client.rpc("get_home_draft", { target: portalId });
   if (draft.error) throw draft.error;
   const settings = existing.data.settings as Settings;
+  if (plan.clone) {
+    const result = await client.from("portals").update({settings:{...settings,logo:settings.logo||assets.logo,favicon:settings.favicon||assets.favicon,ogImage:settings.ogImage||Object.values(assets.covers)[0]||assets.logo}}).eq("id",portalId).eq("organization_id",organizationId);
+    if(result.error) throw result.error;
+    let ready=true;
+    for(const [slug,cover_url] of Object.entries(assets.covers)) {
+      const saved=await client.from("articles").update({cover_url,cover_alt:assets.coverAlts[slug]}).eq("portal_id",portalId).eq("slug",slug).eq("cover_url","");
+      if(saved.error)ready=false;
+    }
+    return {warnings,ready:ready&&!!assets.logo&&!!assets.favicon&&Object.keys(assets.covers).length===plan.articles.length,generatedImages:assets.generatedCount,illustrations:assets.illustratedCount};
+  }
   const known = await client
     .from("campaigns")
     .select("id,name,creative")

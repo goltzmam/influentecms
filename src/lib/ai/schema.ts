@@ -56,6 +56,14 @@ export const briefSchema = z.object({
     .default([]),
 });
 export const blueprintShape = z.object({
+  clone: z.object({
+    url: referenceUrl,
+    logo: z.string().max(2000),
+    favicon: z.string().max(2000),
+    socials: z.array(z.string().max(2000)).max(6),
+    covers: z.record(z.string(), z.string().max(2000)),
+    report: z.array(text(300)).max(20),
+  }).optional(),
   name: text(120).min(1),
   slug,
   template: z.enum(["classic", "modern", "daily"]),
@@ -290,7 +298,7 @@ export function creationPayload(input: AiBlueprint) {
                 ),
             )
             .map((p) => ({ label: p.title, url: `/pagina/${p.slug}` })),
-      socials: [],
+      socials: plan.clone?.socials.map(url => ({label: new URL(url).hostname.replace(/^www\./,""),url})) || [],
       socialCards: [],
       contactEnabled: true,
       newsletterEnabled: true,
@@ -317,7 +325,7 @@ export function creationPayload(input: AiBlueprint) {
         : []),
       ...plan.sections.map((section, index) => ({
         ...section,
-        adSlots: referenceAdSlots(
+        adSlots: plan.clone ? [] : referenceAdSlots(
           section.type,
           `30000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
         ),

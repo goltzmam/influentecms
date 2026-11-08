@@ -1350,3 +1350,12 @@
   .widget-controls .form-columns { grid-template-columns: minmax(0, 1fr); }
   .widget-controls .check-label { min-height: 44px; gap: 10px; }
 }
+
+/* Clone shares the visual editor and domain picker with FLUE. */
+.clone-studio .clone-source-fields { display: grid; gap: 18px; padding: 22px; border: 1px solid #dce8df; border-radius: 18px; background: #f4f8f1; margin-bottom: 24px; }
+.clone-source-fields label { display: grid; gap: 8px; font-weight: 600; }
+.clone-source-fields input { width: 100%; min-width: 0; min-height: 50px; padding: 12px 15px; background: #fff; border: 1px solid #cadbcf; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+.clone-studio .clone-report { margin-bottom: 24px; }
+.clone-report ul { padding-left: 22px; display: grid; gap: 10px; font-size: 14px; line-height: 1.6; }
+.clone-report p { color: #527163; font-size: 14px; line-height: 1.6; }
+@media(max-width:760px) { .clone-studio .clone-source-fields { padding: 16px; } .clone-studio input,.clone-studio textarea,.clone-studio select { font-size: 16px; } .clone-report { overflow-wrap:anywhere; } }

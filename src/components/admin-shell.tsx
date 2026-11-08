@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, ChevronRight, ShieldCheck } from "lucide-react";
 const titles: Record<string, string> = {
   ia: "Estúdio FLUE",
+  clone: "Clone de portal",
   novo: "Criar portal",
   configuracoes: "Configurações",
   noticias: "Notícias",

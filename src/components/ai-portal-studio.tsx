@@ -56,7 +56,7 @@ function Preview({
     name: plan.name,
     slug: plan.slug,
     template: plan.template,
-    settings: payload.settings,
+    settings: {...payload.settings,logo: plan.clone?.logo || payload.settings.logo},
     home_published: sections,
     created_at: new Date().toISOString(),
   } as Portal;
@@ -65,8 +65,8 @@ function Preview({
     id: `article-${i}`,
     portal_id: "preview",
     category_id: categories.find((c) => c.slug === a.categorySlug)?.id || null,
-    cover_url: "",
-    cover_alt: "",
+    cover_url: plan.clone?.covers[a.slug] || "",
+    cover_alt: plan.clone ? "Imagem da referência" : "",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     publish_at: null,
@@ -116,16 +116,20 @@ function Preview({
 }
 export function AiPortalStudio({
   configured,
+  cloneMode = false,
   domains = [],
   history,
   migrationReady,
 }: {
   configured: boolean;
+  cloneMode?: boolean;
   domains?: AvailableDomain[];
   history: History[];
   migrationReady: boolean;
 }) {
   const [domainId, setDomainId] = useState("");
+  const [cloneUrl, setCloneUrl] = useState("");
+  const [cloneName, setCloneName] = useState("");
   const router = useRouter();
   const abort = useRef<AbortController | null>(null);
   const [requireReferences, setRequireReferences] = useState(true);
@@ -162,7 +166,7 @@ export function AiPortalStudio({
       textColor: next.plan.identity.textColor,
       tagline: next.plan.identity.tagline,
     });
-    setPublishArticles(true);
+    setPublishArticles(!next.plan.clone);
     setError("");
   }
   async function generate(event: React.FormEvent) {
@@ -179,10 +183,10 @@ export function AiPortalStudio({
             .filter(Boolean),
         ),
       ];
-      const response = await fetch("/api/ai/portals/generate", {
+      const response = await fetch(cloneMode ? "/api/clone/generate" : "/api/ai/portals/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(cloneMode ? {url: cloneUrl.startsWith("https://") ? cloneUrl : `https://${cloneUrl}`,name:cloneName || undefined,brief} : {
           brief,
           references,
           requireReferences,
@@ -221,13 +225,14 @@ export function AiPortalStudio({
       });
       if (!response.ok) throw new Error(data.error);
       if (data.status === "created" && data.generated_portal_id) {
-        router.push(`/painel/${data.generated_portal_id}`);
+        router.push(`/painel/${data.generated_portal_id}${cloneMode || data.plan?.clone ? "/homepage" : ""}`);
         return;
       }
       if (data.status === "failed") {
         setResult(null);
         setReferenceImages([]);
         setBrief(data.brief || "");
+        if(cloneMode) setCloneUrl(data.reference_urls?.[0] || "");
         setLinks((data.reference_urls || []).join("\n"));
         return;
       }
@@ -280,7 +285,7 @@ export function AiPortalStudio({
         ? `Portal criado. ${data.warnings.join(" ")}`
         : "Portal criado com IA. Todos os elementos podem ser editados no painel.";
       router.push(
-        `/painel/${data.portalId}?notice=${encodeURIComponent(notice)}`,
+        `/painel/${data.portalId}${cloneMode || result?.plan.clone ? "/homepage" : ""}?notice=${encodeURIComponent(notice)}`,
       );
       router.refresh();
     } catch (e) {
@@ -298,24 +303,23 @@ export function AiPortalStudio({
     } catch {}
   }
   return (
-    <div className="ai-studio">
+    <div className={`ai-studio ${cloneMode ? "clone-studio" : ""}`}>
       <div className="page-heading">
         <div>
           <p className="eyebrow">
-            <Sparkles size={13} /> ESTÚDIO FLUE
+            <Sparkles size={13} /> {cloneMode ? "CLONE · FLUE" : "ESTÚDIO FLUE"}
           </p>
-          <h1>Uma ideia. Um portal inteiro.</h1>
+          <h1>{cloneMode ? "Um link. Seu próximo portal." : "Uma ideia. Um portal inteiro."}</h1>
           <p className="muted">
-            Conte o que você imagina. A IA organiza a identidade, as editorias e
-            a experiência de leitura.
+            {cloneMode ? "Importe uma referência, revise a composição e personalize tudo no editor visual." : "Conte o que você imagina. A IA organiza a identidade, as editorias e a experiência de leitura."}
           </p>
         </div>
         <span className={`ai-provider ${configured ? "ready" : ""}`}>
           <span />
-          {configured ? "FLUE conectada" : "FLUE não ativada"}
+          {configured ? "FLUE conectada" : cloneMode ? "Importação disponível" : "FLUE não ativada"}
         </span>
       </div>
-      {!configured && (
+      {!configured && !cloneMode && (
         <div className="notice" role="status">
           A FLUE está temporariamente indisponível. Tente novamente em
           instantes. <Link href="/painel/configuracoes">Ver integrações →</Link>
@@ -332,22 +336,24 @@ export function AiPortalStudio({
           {error}
         </div>
       )}
+      {result?.plan.clone && <div className="panel clone-report"><h2>Relatório da importação</h2><ul>{result.plan.clone.report.map((item,i)=><li key={i}>{item}</li>)}</ul><p>As notícias são criadas como rascunho para revisão. Após concluir, o editor visual abre automaticamente.</p></div>}
       {!result ? (
         <div className="ai-brief-grid">
           <form onSubmit={generate} className="panel ai-brief">
             <div className="ai-step">
               <span>01</span>
-              <h2>Descreva seu próximo portal</h2>
+              <h2>{cloneMode ? "Cole o endereço de referência" : "Descreva seu próximo portal"}</h2>
             </div>
-            <label htmlFor="ai-brief">O que vamos criar?</label>
+            {cloneMode && <div className="clone-source-fields"><label>Endereço do portal<input aria-label="Endereço do portal de referência" type="text" inputMode="url" required maxLength={1500} placeholder="portal.com.br" value={cloneUrl} onChange={e=>setCloneUrl(e.target.value.trim())} disabled={busy} /></label><label>Nome do novo portal<input aria-label="Nome do novo portal" maxLength={120} placeholder="Manter o nome da referência" value={cloneName} onChange={e=>setCloneName(e.target.value)} disabled={busy} /></label><p className="field-hint">A capa, até 6 notícias e até 5 páginas vinculadas são convertidas em blocos editáveis. Você revisa antes de publicar.</p></div>}
+            <label htmlFor="ai-brief">{cloneMode ? "O que deseja adaptar? (opcional)" : "O que vamos criar?"}</label>
             <textarea
               id="ai-brief"
-              minLength={20}
+              minLength={cloneMode ? undefined : 20}
               maxLength={5000}
-              required
+              required={!cloneMode}
               value={brief}
               onChange={(e) => setBrief(e.target.value)}
-              placeholder="Crie um portal de notícias fitness chamado SaudeFIT, com foco em treino para iniciantes e qualidade de vida. Quero uma identidade verde, seções de alimentação, movimento e bem-estar e um visual leve."
+              placeholder={cloneMode ? "Mantenha a composição da referência, use minha nova marca e troque a cor principal por azul. Prefiro menu lateral e busca compacta." : "Crie um portal de notícias fitness chamado SaudeFIT, com foco em treino para iniciantes e qualidade de vida. Quero uma identidade verde, seções de alimentação, movimento e bem-estar e um visual leve."}
               disabled={busy}
             />
             <div className="ai-prompt-hints">
@@ -356,6 +362,7 @@ export function AiPortalStudio({
               <span>Estilo e cores</span>
               <span>Seções desejadas</span>
             </div>
+            {!cloneMode && <>
             <label htmlFor="ai-references">
               Portais de referência{" "}
               <small>Opcional · até 3 links públicos, um por linha</small>
@@ -470,9 +477,10 @@ export function AiPortalStudio({
               A FLUE usa referências para interpretar composição e estilo.
               Textos, marcas e imagens de outros portais não são importados.
             </p>
+            </>}
             <div className="form-actions">
               <Button
-                disabled={!configured || !migrationReady || busy}
+                disabled={(!configured && !cloneMode) || !migrationReady || busy}
                 type="submit"
               >
                 {busy ? (
@@ -483,7 +491,7 @@ export function AiPortalStudio({
                 ) : (
                   <>
                     <Sparkles size={16} />
-                    Gerar meu portal
+                    {cloneMode ? "Analisar e clonar portal" : "Gerar meu portal"}
                   </>
                 )}
               </Button>
@@ -499,8 +507,7 @@ export function AiPortalStudio({
             </div>
             {busy && (
               <p role="status" className="field-hint">
-                A FLUE está analisando o briefing e montando a estrutura. Isso
-                pode levar até quatro minutos.
+                {cloneMode ? "Lendo a referência e convertendo o conteúdo em blocos. Isso pode levar até quatro minutos." : "A FLUE está analisando o briefing e montando a estrutura. Isso pode levar até quatro minutos."}
               </p>
             )}
           </form>
@@ -508,7 +515,7 @@ export function AiPortalStudio({
             <div className="ai-orbit">
               <Sparkles size={34} />
             </div>
-            <p className="eyebrow">DA IDEIA À ESTRUTURA</p>
+            <p className="eyebrow">{cloneMode ? "DA REFERÊNCIA AO SEU PORTAL" : "DA IDEIA À ESTRUTURA"}</p>
             <h2>
               Criado para o seu tema.
               <br />
@@ -518,7 +525,7 @@ export function AiPortalStudio({
               {[
                 [Palette, "Identidade, cores e marca editáveis"],
                 [PanelsTopLeft, "Homepage e editorias organizadas"],
-                [FileText, "Páginas e textos iniciais com SEO"],
+                [FileText, cloneMode ? "Notícias e páginas da referência" : "Páginas e textos iniciais com SEO"],
                 [Globe2, "Portal integrado ao seu CMS"],
               ].map(([Icon, title], i) => {
                 const Comp = Icon as typeof Palette;
@@ -752,7 +759,7 @@ export function AiPortalStudio({
                     checked={publishArticles}
                     onChange={(e) => setPublishArticles(e.target.checked)}
                   />
-                  Publicar também os textos iniciais gerados por IA
+                  {result.plan.clone ? "Publicar também as notícias importadas após minha revisão" : "Publicar também os textos iniciais gerados por IA"}
                 </label>
                 <p className="field-hint">
                   Desmarcado: textos ficam como rascunhos no editor de texto.

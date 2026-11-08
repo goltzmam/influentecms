@@ -1,4 +1,6 @@
 import "server-only";
+import sharp from "sharp";
+import { readPublicResource } from "../clone/web";
 import {
   editorialIllustration,
   demonstrationArt,
@@ -53,8 +55,15 @@ export async function createBrandAssets(
       return "";
     }
   }
-  const logo = await upload("Logotipo tipográfico gerado", () =>
-    brandImage({ name: plan.name, color, accent: accentColor, kind: "logo" }),
+  async function importedImage(url: string) {
+    const resource = await readPublicResource(url, "image", imageBudget);
+    return sharp(resource.bytes, {limitInputPixels:20000000, animated:false}).rotate().resize({width:1800,withoutEnlargement:true}).webp({quality:88}).toBuffer();
+  }
+  const logo = await upload(plan.clone ? "Logotipo do clone" : "Logotipo tipográfico gerado", () =>
+    plan.clone?.logo ? importedImage(plan.clone.logo).catch(() => {
+      warnings.push("O logotipo original não pôde ser importado; foi criada uma marca editável.");
+      return brandImage({ name: plan.name, color, accent: accentColor, kind: "logo" });
+    }) : brandImage({ name: plan.name, color, accent: accentColor, kind: "logo" }),
   );
   const favicon = await upload("Ícone de marca gerado", () =>
     brandImage({
@@ -64,6 +73,7 @@ export async function createBrandAssets(
       kind: "favicon",
     }),
   );
+  const importedCovers = new Set<string>();
   const covers: Record<string, string> = {};
   const coverAlts: Record<string, string> = {};
   const pending = [...plan.articles];
@@ -72,9 +82,13 @@ export async function createBrandAssets(
       for (let article = pending.shift(); article; article = pending.shift()) {
         const current = article;
         const cover = await upload(
-          `Ilustração editorial FLUE: ${current.title}`,
+          `${plan.clone ? "Imagem do clone" : "Ilustração editorial FLUE"}: ${current.title}`,
           async () => {
-            const generated = await generatedVisual(
+            if (plan.clone?.covers[current.slug]) {
+              try { const bytes = await importedImage(plan.clone.covers[current.slug]); importedCovers.add(current.slug); return bytes; }
+              catch { warnings.push(`A imagem de “${current.title.slice(0,100)}” não pôde ser copiada; substitua pela biblioteca de mídia.`); }
+            }
+            const generated = plan.clone ? null : await generatedVisual(
               `${plan.name}. ${current.title}. ${current.imagePrompt || current.subtitle}`,
               imageBudget,
             );
@@ -94,11 +108,12 @@ export async function createBrandAssets(
         if (cover) {
           covers[current.slug] = cover;
           coverAlts[current.slug] =
-            `Ilustração editorial gerada para ${current.title}; imagem ilustrativa.`;
+            importedCovers.has(current.slug) ? `Imagem importada da referência para ${current.title}.` : `Ilustração editorial gerada para ${current.title}; imagem ilustrativa.`;
         }
       }
     }),
   );
+  if (plan.clone) return {logo, favicon, covers, coverAlts, demonstration:{vertical:"",rectangle:"",banner:"",sponsor:"",partner:""},warnings,generatedCount,illustratedCount};
   const demonstration = {
     vertical: await upload("Publicidade vertical demonstrativa FLUE", () =>
       demonstrationArt({

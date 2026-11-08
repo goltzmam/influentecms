@@ -15,6 +15,7 @@ import {
   FileText,
   ExternalLink,
   Sparkles,
+  Copy,
   ChartNoAxesCombined,
   Users,
   SlidersHorizontal,
@@ -91,6 +92,7 @@ export function AdminNav({
             Criar com IA
           </Link>
         )}
+        {isOwner && <Link href="/painel/clone" className={path === "/painel/clone" ? "nav-active" : ""}><Copy size={17} />Clone</Link>}
         {isOwner && (
           <Link
             href="/painel/dominios"
