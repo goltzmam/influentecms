@@ -92,7 +92,7 @@ export const settingsSchema = z.object({
   contactPhone: text(50).optional(),
   commercialEmail: z.union([z.literal(""), z.email()]).optional(),
   commercialPhone: text(50).optional(),
-  commercialText: text(300).optional(),
+  commercialText: text(2000).optional(),
   socialCards: z
     .array(z.object({ label: text(80), image: imageSchema, url: linkSchema }))
     .max(3)

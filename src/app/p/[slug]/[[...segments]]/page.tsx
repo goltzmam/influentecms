@@ -289,7 +289,12 @@ export default async function PublicPage({ params, searchParams }: Props) {
     );
   } else notFound();
   return (
-    <NewsShell portal={portal} {...data} basePath={basePath}>
+    <NewsShell
+      portal={portal}
+      {...data}
+      basePath={basePath}
+      isHomepage={context.kind === "home"}
+    >
       {context.kind === "page" && (
         <Campaigns campaigns={data.campaigns} position="page-top" />
       )}

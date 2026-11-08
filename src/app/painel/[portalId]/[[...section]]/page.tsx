@@ -471,7 +471,11 @@ export default async function PortalAdmin({
               </p>
             </section>
             <AppearanceDetails portalId={portalId} settings={s} />
-            <ExperienceEditor portalId={portalId} value={s.experience || {}} />
+            <ExperienceEditor
+              portalId={portalId}
+              value={s.experience || {}}
+              sections={portal.home_published}
+            />
             <section className="panel">
               <h2>Menu de navegação</h2>
               <label>

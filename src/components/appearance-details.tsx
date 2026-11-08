@@ -1,4 +1,4 @@
-import {AdvertisingEditor} from "./advertising-editor";
+import { AdvertisingEditor } from "./advertising-editor";
 import type { Settings } from "@/lib/types";
 import { MediaInput } from "./media-input";
 import { SocialCardsEditor } from "./social-cards-editor";
@@ -11,7 +11,7 @@ export function AppearanceDetails({
 }) {
   return (
     <>
-      <AdvertisingEditor value={s.advertising}/>
+      <AdvertisingEditor value={s.advertising} />
       <section className="panel">
         <h2>Cores e assinatura visual</h2>
         <div className="form-columns">
@@ -185,7 +185,7 @@ export function AppearanceDetails({
           Texto do bloco comercial
           <textarea
             name="commercialText"
-            maxLength={300}
+            maxLength={2000}
             defaultValue={s.commercialText}
           />
         </label>

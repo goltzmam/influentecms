@@ -1,11 +1,20 @@
 "use client";
+import { WidgetEditor } from "./widget-editor";
 import { useState } from "react";
 import type { Experience } from "@/lib/experience";
 import { MediaInput } from "./media-input";
 import { MenuEditor } from "./menu-editor";
-export type ExperienceTab = "navigation" | "contact" | "footer" | "partners";
+export type ExperienceTab =
+  | "navigation"
+  | "contact"
+  | "footer"
+  | "partners"
+  | "search"
+  | "newsletter"
+  | "commercial";
 export function ExperienceEditor({
   portalId,
+  sections = [],
   value = {},
   onChange,
   tab: controlledTab,
@@ -13,6 +22,7 @@ export function ExperienceEditor({
   name = "experience",
 }: {
   portalId: string;
+  sections?: { id: string; title?: string; type?: string }[];
   value?: Experience;
   onChange?: (value: Experience) => void;
   tab?: ExperienceTab;
@@ -29,6 +39,40 @@ export function ExperienceEditor({
     v: unknown,
   ) {
     const next = { ...data, [group]: { ...data[group], [key]: v } };
+    if (
+      group === "navigation" &&
+      ["background", "color", "accent"].includes(key)
+    )
+      next.navigation = { ...next.navigation, customColors: true };
+    if (
+      group === "search" &&
+      [
+        "background",
+        "color",
+        "buttonColor",
+        "buttonTextColor",
+        "inputBackground",
+        "inputColor",
+        "inputBorder",
+      ].includes(key)
+    )
+      next.search = { ...next.search, customStyle: true };
+    if (group === "navigation" && key === "density")
+      next.navigation = {
+        ...next.navigation,
+        headerHeight: v === "comfortable" ? 108 : 84,
+      };
+    const legacy: Record<string, string> = {
+      advertTitle: "title",
+      advertLink: "link",
+      advertImage: "image",
+      advertVideo: "video",
+      advertBackground: "background",
+      advertColor: "color",
+      showCommercial: "enabled",
+    };
+    if (group === "footer" && legacy[key])
+      next.commercial = { ...data.commercial, [legacy[key]]: v };
     setLocal(next);
     onChange?.(next);
   }
@@ -156,6 +200,9 @@ export function ExperienceEditor({
             ["contact", "Formulário"],
             ["footer", "Rodapé"],
             ["partners", "Parceiros"],
+            ["search", "Busca"],
+            ["newsletter", "Novidades"],
+            ["commercial", "Chamada comercial"],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -172,21 +219,103 @@ export function ExperienceEditor({
           </button>
         ))}
       </div>
+      {(tab === "search" || tab === "newsletter" || tab === "commercial") && (
+        <div role="tabpanel">
+          <h3>
+            {tab === "search"
+              ? "Busca do portal"
+              : tab === "newsletter"
+                ? "Inscrição e novidades"
+                : "Chamada para anunciantes"}
+          </h3>
+          <WidgetEditor
+            kind={tab}
+            value={data}
+            portalId={portalId}
+            sections={sections}
+            onChange={(key, v) => change(tab, key, v)}
+          />
+        </div>
+      )}
       {tab === "navigation" && (
         <div role="tabpanel">
           <h3>Navegação que combina com seu portal</h3>
+          <MediaInput
+            portalId={portalId}
+            name="header-logo-control"
+            label="Marca exclusiva do cabeçalho"
+            value={data.navigation?.logo}
+            onChange={(v) => change("navigation", "logo", v)}
+          />
+          {check("navigation", "showLogo", "Mostrar a marca no cabeçalho")}
+          {number(
+            "navigation",
+            "logoWidth",
+            "Largura da marca do cabeçalho",
+            180,
+            50,
+            600,
+          )}
           {select(
             "navigation",
             "layout",
             "Formato do menu",
             [
-              ["horizontal", "Horizontal com submenus"],
+              ["horizontal", "Somente menu horizontal"],
               ["burger", "Botão de menu com painel lateral"],
               ["sidebar", "Menu lateral"],
               ["hybrid", "Horizontal + botão de menu"],
+              ["hidden", "Sem menu"],
             ],
             "horizontal",
           )}
+          {check("navigation", "enabled", "Exibir navegação do portal")}
+          {select(
+            "navigation",
+            "inlineStyle",
+            "Distribuição dos links",
+            [
+              ["row", "Uma linha, com quebra automática"],
+              ["distributed", "Links distribuídos na largura"],
+              ["columns", "Colunas editoriais"],
+            ],
+            "row",
+          )}
+          {text("navigation", "menuLabel", "Texto do botão de menu", "Menu")}
+          {select(
+            "navigation",
+            "density",
+            "Tamanho do cabeçalho",
+            [
+              ["compact", "Compacto"],
+              ["comfortable", "Mais espaçado"],
+            ],
+            "compact",
+          )}
+          {check("navigation", "shrinkOnScroll", "Encolher cabeçalho ao rolar")}
+          {check(
+            "navigation",
+            "showTagline",
+            "Mostrar assinatura no cabeçalho",
+          )}
+          <div className="form-columns">
+            {number(
+              "navigation",
+              "headerHeight",
+              "Altura do cabeçalho",
+              84,
+              64,
+              140,
+            )}
+            {number(
+              "navigation",
+              "compactHeight",
+              "Altura ao rolar",
+              56,
+              48,
+              88,
+            )}
+          </div>
           <div className="form-columns">
             {select(
               "navigation",
@@ -222,7 +351,7 @@ export function ExperienceEditor({
             "navigation",
             "sticky",
             "Manter o menu visível ao rolar",
-            false,
+            true,
           )}
           <p className="field-hint">
             Os itens e submenus são organizados em Menu de navegação, logo
@@ -244,6 +373,19 @@ export function ExperienceEditor({
               ["hidden", "Não exibir"],
             ],
             "compact",
+          )}
+          <WidgetEditor
+            kind="contact"
+            value={data}
+            portalId={portalId}
+            sections={sections}
+            onChange={(key, v) => change("contact", key, v)}
+          />
+          {text(
+            "contact",
+            "title",
+            "Título do formulário de contato",
+            "Fale com a redação",
           )}
           {text(
             "contact",
@@ -375,6 +517,14 @@ export function ExperienceEditor({
       {tab === "footer" && (
         <div role="tabpanel">
           <h3>Um rodapé completo e organizado</h3>
+          {number(
+            "footer",
+            "logoWidth",
+            "Largura da marca do rodapé",
+            180,
+            50,
+            600,
+          )}
           <div className="form-columns">
             {select(
               "footer",

@@ -30,16 +30,31 @@ export function presentationSettings(
     font: template === "modern" ? "serif" : "sans",
     whatsappText:
       "Notícia por onde você passa, você também vê no WhatsApp. Clique!",
-    newsletterTitle: "Receba novidades por e-mail",
     newsletterText: "Saiba primeiro pelo grupo e canal do WhatsApp",
-    contactTitle: "Fale com a redação",
-    contactEnabled: true,
-    newsletterEnabled: true,
-    commercialText:
-      "Conecte sua marca a quem acompanha nossa publicação. Conheça nossos formatos e fale com a equipe.",
     ...s,
+    newsletterTitle:
+      s.experience?.newsletter?.title ??
+      s.newsletterTitle ??
+      "Receba novidades por e-mail",
+    contactTitle:
+      s.experience?.contact?.title ?? s.contactTitle ?? "Fale com a redação",
+    contactEnabled: s.experience?.contact?.enabled ?? s.contactEnabled ?? true,
+    newsletterEnabled:
+      s.experience?.newsletter?.showForm ?? s.newsletterEnabled ?? true,
+    commercialText:
+      s.experience?.commercial?.body ??
+      s.commercialText ??
+      "Conecte sua marca a quem acompanha nossa publicação. Conheça nossos formatos e fale com a equipe.",
     experience: {
       navigation: {
+        enabled: true,
+        density: "compact",
+        sticky: true,
+        shrinkOnScroll: true,
+        headerHeight: 84,
+        compactHeight: 56,
+        showTagline: true,
+        inlineStyle: "row",
         layout: template === "daily" ? "burger" : "horizontal",
         background: s.color || templates[template].color,
         color: "#ffffff",
@@ -53,7 +68,57 @@ export function presentationSettings(
             s.experience?.navigation?.accent,
           ),
       },
+      search: {
+        customStyle: Boolean(
+          s.experience?.search?.inputBackground ||
+          s.experience?.search?.inputColor ||
+          s.experience?.search?.inputBorder ||
+          s.experience?.search?.buttonColor ||
+          s.experience?.search?.buttonTextColor,
+        ),
+        enabled: true,
+        position: "header",
+        placeholder: template === "classic" ? undefined : "O que você procura?",
+        buttonLabel: "Buscar",
+        ...s.experience?.search,
+      },
+      newsletter: {
+        enabled: (s.newsletterEnabled ?? true) || !!s.whatsappUrl,
+        showForm: s.newsletterEnabled ?? true,
+        showWhatsapp: true,
+        position: "before-footer",
+        title: s.newsletterTitle ?? "Receba novidades por e-mail",
+        placeholder: "Seu e-mail",
+        buttonLabel: "Assinar",
+        consentText: "Quero receber novidades por e-mail.",
+        ...s.experience?.newsletter,
+      },
+      commercial: {
+        enabled: s.experience?.footer?.showCommercial ?? true,
+        position: "footer",
+        contentType: "content",
+        title: s.experience?.footer?.advertTitle ?? "",
+        body:
+          s.commercialText ??
+          "Conecte sua marca a quem acompanha nossa publicação. Conheça nossos formatos e fale com a equipe.",
+        buttonLabel: "Conheça as oportunidades",
+        link: s.experience?.footer?.advertLink ?? "",
+        image: s.experience?.footer?.advertImage ?? "",
+        video: s.experience?.footer?.advertVideo ?? "",
+        background:
+          s.experience?.footer?.advertBackground ??
+          (template === "classic"
+            ? "#ffffff"
+            : s.accentColor || templates[template].accentColor),
+        color:
+          s.experience?.footer?.advertColor ??
+          (s.color || templates[template].color),
+        ...s.experience?.commercial,
+      },
       contact: {
+        enabled: s.contactEnabled ?? true,
+        position: "default",
+        title: s.contactTitle ?? "Fale com a redação",
         mode: template === "classic" ? "inline" : "compact",
         maxWidth: 640,
         columns: "two",
@@ -63,7 +128,10 @@ export function presentationSettings(
         radius: 16,
         padding: 24,
         messageRows: 3,
-        fields: template === "classic" ? ["address","neighborhood","phone","subject","kind"] : ["phone", "subject"],
+        fields:
+          template === "classic"
+            ? ["address", "neighborhood", "phone", "subject", "kind"]
+            : ["phone", "subject"],
         ...s.experience?.contact,
       },
       footer: {
@@ -79,7 +147,10 @@ export function presentationSettings(
         showLogo: true,
         showSocials: true,
         showRss: true,
-        advertBackground: template === "classic" ? "#ffffff" : s.accentColor || templates[template].accentColor,
+        advertBackground:
+          template === "classic"
+            ? "#ffffff"
+            : s.accentColor || templates[template].accentColor,
         advertColor: s.color || templates[template].color,
         ...s.experience?.footer,
       },
@@ -137,16 +208,14 @@ export function referenceSections(
         title: "Novas histórias",
       },
       banner,
-      ...categories
-        .slice(0, 3)
-        .map((c) => ({
-          id: c.id,
-          type: "category" as const,
-          title: c.name,
-          categoryId: c.id,
-          layout: "magazine" as const,
-          position: "category" as const,
-        })),
+      ...categories.slice(0, 3).map((c) => ({
+        id: c.id,
+        type: "category" as const,
+        title: c.name,
+        categoryId: c.id,
+        layout: "magazine" as const,
+        position: "category" as const,
+      })),
       sponsored,
     ];
   const blocks: Section[] = [lead, sponsored];

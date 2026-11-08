@@ -1,4 +1,6 @@
 "use server";
+import { presentationSettings } from "@/lib/presentation";
+import { widgetReaderFlags, reconcileLegacyWidgets } from "@/lib/widgets";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -232,6 +234,12 @@ export async function saveSettings(form: FormData) {
       newsletterEnabled: form.has("newsletterEnabled"),
       socialCards: JSON.parse(str(form, "socialCards") || "[]"),
     });
+    settings.experience = reconcileLegacyWidgets(
+      presentationSettings(portal.settings, portal.template),
+      settings.experience || {},
+      settings,
+    );
+    Object.assign(settings, widgetReaderFlags(settings));
     const name = z.string().trim().min(1).max(120).parse(str(form, "name"));
     const template = z
       .enum(["classic", "modern", "daily"])
@@ -334,6 +342,8 @@ export async function saveHomepage(form: FormData) {
         throw new Error("CMS:Escolha apenas anúncios deste portal.");
     }
     const publish = str(form, "intent") === "publish";
+    const publishedSettings = { ...portal.settings, ...design };
+    Object.assign(publishedSettings, widgetReaderFlags(publishedSettings));
     const { error } = await client
       .from("portals")
       .update(
@@ -341,7 +351,7 @@ export async function saveHomepage(form: FormData) {
           ? {
               home_draft: sections,
               home_published: sections,
-              settings: { ...portal.settings, ...design },
+              settings: publishedSettings,
               template,
               design_draft: { settings: design, template },
             }

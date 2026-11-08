@@ -42,6 +42,32 @@ export const videoUrl = z
       return false;
     }
   }, "Use um vídeo do YouTube ou um arquivo MP4/WebM seguro.");
+export const widgetPlacementSchema = z.object({
+  enabled: z.boolean().optional(),
+  position: z
+    .enum([
+      "default",
+      "header",
+      "before-content",
+      "after-content",
+      "before-section",
+      "after-section",
+      "before-footer",
+      "footer",
+    ])
+    .optional(),
+  sectionId: z.union([z.uuid(), z.literal("")]).optional(),
+  align: z.enum(["left", "center", "right"]).optional(),
+  maxWidth: z.number().int().min(200).max(1600).optional(),
+  background: hex.optional(),
+  color: hex.optional(),
+  radius: z.number().int().min(0).max(80).optional(),
+  padding: z.number().int().min(0).max(100).optional(),
+  image: image.optional(),
+  imageLink: url.optional(),
+  imageAlt: text(200).optional(),
+  contentType: z.enum(["content", "image"]).optional(),
+});
 const leaf = z.object({
   label: text(80).min(1, "Dê um nome a cada item do menu."),
   url,
@@ -55,9 +81,20 @@ export const experienceSchema = z
   .object({
     navigation: z
       .object({
+        showLogo: z.boolean().optional(),
+        logo: image.optional(),
+        logoWidth: z.number().int().min(50).max(600).optional(),
+        enabled: z.boolean().optional(),
+        inlineStyle: z.enum(["row", "distributed", "columns"]).optional(),
+        density: z.enum(["compact", "comfortable"]).optional(),
+        shrinkOnScroll: z.boolean().optional(),
+        headerHeight: z.number().int().min(64).max(140).optional(),
+        compactHeight: z.number().int().min(48).max(88).optional(),
+        showTagline: z.boolean().optional(),
+        menuLabel: text(40).optional(),
         customColors: z.boolean().optional(),
         layout: z
-          .enum(["horizontal", "burger", "sidebar", "hybrid"])
+          .enum(["horizontal", "burger", "sidebar", "hybrid", "hidden"])
           .optional(),
         background: hex.optional(),
         color: hex.optional(),
@@ -67,8 +104,9 @@ export const experienceSchema = z
         sticky: z.boolean().optional(),
       })
       .optional(),
-    contact: z
-      .object({
+    contact: widgetPlacementSchema
+      .extend({
+        title: text(160).optional(),
         mode: z.enum(["inline", "compact", "drawer", "hidden"]).optional(),
         maxWidth: z.number().int().min(280).max(1200).optional(),
         columns: z.enum(["one", "two"]).optional(),
@@ -102,6 +140,7 @@ export const experienceSchema = z
         color: hex.optional(),
         columns: z.number().int().min(1).max(4).optional(),
         logo: image.optional(),
+        logoWidth: z.number().int().min(50).max(600).optional(),
         showLogo: z.boolean().optional(),
         showMenu: z.boolean().optional(),
         showCommercial: z.boolean().optional(),
@@ -116,6 +155,45 @@ export const experienceSchema = z
         advertTitle: text(120).optional(),
         advertBackground: hex.optional(),
         advertColor: hex.optional(),
+      })
+      .optional(),
+    search: widgetPlacementSchema
+      .extend({
+        preset: z.enum(["outline", "filled", "minimal", "pill"]).optional(),
+        customStyle: z.boolean().optional(),
+        placeholder: text(200).optional(),
+        buttonLabel: text(80).optional(),
+        buttonColor: hex.optional(),
+        buttonTextColor: hex.optional(),
+        inputBackground: hex.optional(),
+        inputColor: hex.optional(),
+        inputBorder: hex.optional(),
+        height: z.number().int().min(30).max(90).optional(),
+      })
+      .optional(),
+    newsletter: widgetPlacementSchema
+      .extend({
+        title: text(160).optional(),
+        description: text(500).optional(),
+        placeholder: text(200).optional(),
+        buttonLabel: text(80).optional(),
+        consentText: text(500).optional(),
+        buttonColor: hex.optional(),
+        buttonTextColor: hex.optional(),
+        inputBackground: hex.optional(),
+        inputColor: hex.optional(),
+        showForm: z.boolean().optional(),
+        showWhatsapp: z.boolean().optional(),
+      })
+      .optional(),
+    commercial: widgetPlacementSchema
+      .extend({
+        title: text(160).optional(),
+        body: text(2000).optional(),
+        buttonLabel: text(100).optional(),
+        link: url.optional(),
+        video: videoUrl.optional(),
+        showContacts: z.boolean().optional(),
       })
       .optional(),
     partners: z

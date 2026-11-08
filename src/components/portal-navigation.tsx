@@ -85,9 +85,17 @@ export function PortalNavigation({
       document.body.style.overflow = previous;
     };
   }, [open]);
+  useEffect(() => {
+    if (config.enabled === false || mode === "hidden") {
+      dialog.current?.close();
+      setOpen(false);
+    }
+  }, [config.enabled, mode]);
+  if (config.enabled === false || mode === "hidden" || !items.length)
+    return null;
   return (
     <div
-      className={`portal-navigation nav-mode-${mode}`}
+      className={`portal-navigation nav-mode-${mode} nav-distribution-${config.inlineStyle || "row"}`}
       style={
         {
           "--drawer-background": custom
@@ -113,7 +121,7 @@ export function PortalNavigation({
         }}
       >
         <Menu size={22} aria-hidden="true" />
-        <span>Menu</span>
+        <span>{config.menuLabel ?? "Menu"}</span>
       </button>
       <nav
         className="news-nav portal-nav-inline"

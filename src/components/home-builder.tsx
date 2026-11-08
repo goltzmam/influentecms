@@ -6,6 +6,7 @@ import {
   type AdSlot,
   type Advertising,
 } from "@/lib/advertising";
+import { widgetKinds, widgetNames, type WidgetKind } from "@/lib/widgets";
 import { ExperienceEditor, type ExperienceTab } from "./experience-editor";
 import { MenuEditor } from "./menu-editor";
 import type { Experience, MenuItem } from "@/lib/experience";
@@ -713,6 +714,30 @@ export function HomeBuilder({
     event.preventDefault();
     event.stopPropagation();
     setDropError("");
+    const widget = event.dataTransfer.getData("application/x-influente-widget");
+    if (widgetKinds.includes(widget as WidgetKind)) {
+      const region = (event.target as HTMLElement)
+        .closest("[data-utility-location]")
+        ?.getAttribute("data-utility-location");
+      const anchor =
+        before ||
+        (event.target as HTMLElement)
+          .closest("[data-section-id]")
+          ?.getAttribute("data-section-id");
+      const position = anchor ? "before-section" : region || "after-content";
+      setExperience((current) => ({
+        ...current,
+        [widget]: {
+          ...current[widget as WidgetKind],
+          enabled: true,
+          position,
+          sectionId: anchor || "",
+        },
+      }));
+      setExperienceTab(widget as ExperienceTab);
+      setInspectorTab("design");
+      return;
+    }
     const adKind = event.dataTransfer.getData(
       "application/x-influente-ad-kind",
     );
@@ -923,6 +948,38 @@ export function HomeBuilder({
           </p>
         )}
         {uploading && <p role="status">Enviando imagem…</p>}
+        <div className="utility-builder-palette">
+          <div>
+            <strong>Blocos do portal</strong>
+            <p>
+              Arraste para uma seção ou clique para editar textos, posição e
+              visibilidade.
+            </p>
+          </div>
+          {widgetKinds.map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              className="button-outline"
+              draggable
+              onDragStart={(event) =>
+                event.dataTransfer.setData(
+                  "application/x-influente-widget",
+                  kind,
+                )
+              }
+              onClick={() => {
+                setExperienceTab(kind);
+                setInspectorTab("design");
+                document
+                  .getElementById("portal-experience-controls")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              {widgetNames[kind]}
+            </button>
+          ))}
+        </div>
         <div className="ad-builder-palette">
           <div>
             <strong>Espaços de monetização</strong>
@@ -1072,6 +1129,7 @@ export function HomeBuilder({
             <div hidden={inspectorTab !== "design"}>
               <ExperienceEditor
                 portalId={portalId}
+                sections={sections}
                 value={experience}
                 onChange={setExperience}
                 tab={experienceTab}
@@ -1253,9 +1311,15 @@ export function HomeBuilder({
                   ExperienceTab | undefined;
                 if (
                   region &&
-                  ["navigation", "contact", "footer", "partners"].includes(
-                    region,
-                  )
+                  [
+                    "navigation",
+                    "contact",
+                    "footer",
+                    "partners",
+                    "search",
+                    "newsletter",
+                    "commercial",
+                  ].includes(region)
                 ) {
                   setExperienceTab(region);
                   setInspectorTab("design");

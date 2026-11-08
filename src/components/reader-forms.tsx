@@ -199,10 +199,12 @@ export function ContactForm({
   );
 }
 export function NewsletterForm({
+  config,
   portalId,
   title,
   preview = false,
 }: {
+  config?: Experience["newsletter"];
   portalId: string;
   title: string;
   preview?: boolean;
@@ -212,8 +214,21 @@ export function NewsletterForm({
     message: "",
   });
   return (
-    <div className="newsletter-signup">
-      <h2>{title}</h2>
+    <div
+      className="newsletter-signup"
+      style={
+        {
+          "--newsletter-button-bg": config?.buttonColor,
+          "--newsletter-button-color": config?.buttonTextColor,
+          "--newsletter-input-bg": config?.inputBackground,
+          "--newsletter-input-color": config?.inputColor,
+        } as React.CSSProperties
+      }
+    >
+      {title && <h2>{title}</h2>}
+      {config?.description && (
+        <p className="newsletter-description">{config.description}</p>
+      )}
       <form action={action}>
         <input type="hidden" name="portal_id" value={portalId} />
         <input
@@ -230,15 +245,17 @@ export function NewsletterForm({
               aria-label="E-mail para novidades"
               type="email"
               name="email"
-              placeholder="Seu e-mail"
+              placeholder={config?.placeholder ?? "Seu e-mail"}
               required
               maxLength={254}
             />
-            <button>{pending ? "Registrando…" : "Assinar"}</button>
+            <button>
+              {pending ? "Registrando…" : (config?.buttonLabel ?? "Assinar")}
+            </button>
           </div>
           <label className="reader-consent">
             <input type="checkbox" name="consent" required />
-            Quero receber novidades por e-mail.
+            {config?.consentText ?? "Quero receber novidades por e-mail."}
           </label>
         </fieldset>
         {state.message && (

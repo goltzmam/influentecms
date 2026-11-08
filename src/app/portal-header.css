@@ -1,0 +1,659 @@
+/* Compact shared mastheads; each theme keeps its editorial composition. */
+.reference-site .header-adaptive {
+  position: relative;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border-bottom: 1px solid #ffffff20;
+  z-index: 60;
+  transition: box-shadow 0.2s;
+}
+.reference-site .header-adaptive.adaptive-sticky {
+  position: sticky !important;
+  top: 0;
+  z-index: 60;
+}
+.reference-site .header-adaptive .news-masthead {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 1.8fr) minmax(170px, 1fr);
+  grid-template-areas: "brand navigation tools";
+  align-items: center;
+  gap: 20px;
+  max-width: 1240px;
+  width: 100%;
+  min-height: var(--header-height, 84px);
+  height: auto;
+  margin: 0 auto;
+  padding: 12px 28px;
+  transition:
+    min-height 0.2s,
+    padding 0.2s;
+}
+.reference-site .header-adaptive .brand-column {
+  grid-area: brand;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+  align-items: flex-start;
+}
+.reference-site .header-adaptive .news-logo {
+  height: auto;
+  max-width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: -0.8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.reference-site .header-adaptive .news-logo img {
+  max-height: 48px;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transition: max-height 0.2s;
+}
+.reference-site .header-adaptive .brand-tagline {
+  font-size: 10px;
+  line-height: 1.4;
+  margin: 5px 0 0;
+  max-width: 300px;
+  letter-spacing: 0;
+}
+.reference-site .header-adaptive .header-tools {
+  grid-area: tools;
+  position: static;
+  transform: none;
+  width: 100%;
+  min-width: 0;
+  justify-self: end;
+  max-width: 280px;
+  margin: 0;
+}
+.reference-site .header-adaptive .header-whatsapp {
+  font-size: 10px;
+  line-height: 1.4;
+  margin-top: 5px;
+  padding: 5px 8px;
+  max-width: 100%;
+}
+.reference-site .header-adaptive .portal-navigation {
+  grid-area: navigation;
+  position: static;
+  width: 100%;
+  min-width: 0;
+  align-self: center;
+  justify-self: center;
+  background: transparent;
+  color: inherit;
+}
+.reference-site .header-adaptive .portal-nav-inline {
+  background: transparent;
+  color: inherit;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  display: block;
+}
+.reference-site .header-adaptive .portal-nav-inline > ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 16px;
+  padding: 0;
+  margin: 0;
+  grid-template-columns: none;
+}
+.reference-site .header-adaptive .portal-nav-inline > ul > li {
+  min-width: 0;
+  margin: 0;
+  list-style: none;
+  line-height: 1.4;
+}
+.reference-site .header-adaptive .portal-nav-inline a,
+.reference-site .header-adaptive .portal-nav-inline summary {
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 5px 0;
+  letter-spacing: 0;
+  font-weight: 600;
+  white-space: normal;
+}
+.reference-site .header-adaptive .portal-nav-inline > ul > li > details > ul {
+  min-width: 190px;
+  background: var(--drawer-background, #fff);
+  color: var(--drawer-color, #17342a);
+  z-index: 80;
+  padding: 12px;
+}
+.reference-site
+  .header-adaptive
+  .nav-distribution-distributed
+  .portal-nav-inline
+  > ul {
+  justify-content: space-between;
+}
+.reference-site
+  .header-adaptive
+  .nav-distribution-columns
+  .portal-nav-inline
+  > ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px 15px;
+}
+.reference-site .header-adaptive .menu-toggle {
+  position: static;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.1;
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+  width: auto;
+  max-width: 140px;
+  transform: none;
+}
+.reference-site
+  .header-adaptive
+  .portal-navigation.nav-mode-burger
+  > .portal-nav-inline,
+.reference-site
+  .header-adaptive
+  .portal-navigation.nav-mode-sidebar
+  > .portal-nav-inline {
+  display: none !important;
+}
+.reference-site .header-adaptive .nav-mode-burger .menu-toggle,
+.reference-site .header-adaptive .nav-mode-sidebar .menu-toggle,
+.reference-site .header-adaptive .nav-mode-hybrid .menu-toggle {
+  display: flex;
+}
+.reference-site .header-adaptive .nav-mode-hybrid {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.reference-site.classic .header-adaptive.header-align-center .news-masthead {
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 240px) minmax(0, 1fr);
+  grid-template-areas: "navigation brand tools";
+}
+.reference-site.classic .header-adaptive.header-align-center .brand-column {
+  grid-area: brand;
+  text-align: center;
+  align-items: center;
+}
+.reference-site.classic
+  .header-adaptive.header-align-center
+  .portal-navigation {
+  display: contents;
+}
+.reference-site.classic
+  .header-adaptive.header-align-center
+  .portal-nav-inline {
+  grid-column: 1/-1;
+  grid-row: 2;
+  padding-bottom: 4px;
+}
+.reference-site.classic .header-adaptive.header-align-center .menu-toggle {
+  grid-area: navigation;
+  justify-self: start;
+  align-self: center;
+}
+.reference-site .header-adaptive .daily-brandbar,
+.reference-site .header-adaptive .magazine-brandbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 260px) minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  max-width: 1240px;
+  width: 100%;
+  min-height: var(--header-height, 84px);
+  margin: auto;
+  padding: 12px 28px;
+  border: 0;
+  transition:
+    min-height 0.2s,
+    padding 0.2s;
+}
+.reference-site .header-adaptive .daily-brandbar > .news-logo,
+.reference-site .header-adaptive .magazine-brandbar > .news-logo {
+  grid-column: 2;
+  justify-self: center;
+}
+.reference-site .header-adaptive .daily-search,
+.reference-site .header-adaptive .magazine-search {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 280px;
+  justify-self: end;
+}
+.reference-site .header-adaptive .daily-edition-label {
+  font-size: 10px;
+  line-height: 1.4;
+  max-width: 200px;
+  letter-spacing: 0;
+}
+.reference-site .header-adaptive .magazine-utility {
+  display: none;
+}
+.reference-site .header-adaptive .daily-navigation-bar,
+.reference-site .header-adaptive .magazine-navigation-bar {
+  max-width: 1240px;
+  width: 100%;
+  margin: auto;
+  padding: 0 28px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  min-height: 0;
+}
+.reference-site .header-adaptive.header-layout-burger .daily-navigation-bar,
+.reference-site .header-adaptive.header-layout-sidebar .daily-navigation-bar,
+.reference-site .header-adaptive.header-layout-burger .magazine-navigation-bar,
+.reference-site
+  .header-adaptive.header-layout-sidebar
+  .magazine-navigation-bar {
+  position: absolute;
+  top: 50%;
+  left: max(28px, calc((100% - 1184px) / 2));
+  transform: translateY(-50%);
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+.reference-site .header-adaptive.header-layout-burger .daily-edition-label,
+.reference-site .header-adaptive.header-layout-sidebar .daily-edition-label {
+  visibility: hidden;
+}
+.reference-site .header-adaptive.header-no-tagline .brand-tagline,
+.reference-site .header-adaptive.header-no-tagline .daily-edition-label,
+.reference-site .header-adaptive.header-no-tagline .magazine-utility {
+  display: none;
+}
+.reference-site .header-adaptive .header-editorial-note {
+  font-size: 10px;
+  line-height: 1.4;
+  margin: 0 auto;
+  padding: 0 28px 8px;
+  max-width: 1240px;
+}
+.reference-site .header-adaptive.header-is-compact {
+  box-shadow: 0 4px 20px #00000012;
+}
+.reference-site .header-adaptive.header-is-compact .news-masthead,
+.reference-site .header-adaptive.header-is-compact .daily-brandbar,
+.reference-site .header-adaptive.header-is-compact .magazine-brandbar {
+  min-height: var(--header-compact-height, 56px);
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.reference-site .header-adaptive.header-is-compact .news-logo img {
+  max-height: 36px;
+}
+.reference-site .header-adaptive.header-is-compact .brand-tagline,
+.reference-site .header-adaptive.header-is-compact .header-editorial-note,
+.reference-site .header-adaptive.header-is-compact .header-whatsapp,
+.reference-site .header-adaptive.header-is-compact .daily-edition-label {
+  display: none;
+}
+.reference-site .header-adaptive.header-is-compact .portal-nav-inline {
+  display: none !important;
+}
+.reference-site .header-adaptive.header-is-compact .menu-toggle {
+  display: flex;
+}
+.reference-site .header-adaptive.header-is-compact .daily-navigation-bar,
+.reference-site .header-adaptive.header-is-compact .magazine-navigation-bar {
+  position: absolute;
+  top: 50%;
+  left: max(28px, calc((100% - 1184px) / 2));
+  transform: translateY(-50%);
+  width: auto;
+  padding: 0;
+  margin: 0;
+}
+.reference-site .header-adaptive .widget-search {
+  font:
+    13px/1.4 Arial,
+    sans-serif;
+  width: 100%;
+  padding: 0;
+  min-width: 0;
+}
+.reference-site .header-adaptive .configurable-search {
+  font-size: 13px;
+  min-height: 0;
+  max-width: 100%;
+  margin: 0;
+}
+.reference-site .configurable-search input,
+.reference-site .configurable-search button {
+  font:
+    13px/1.4 Arial,
+    sans-serif !important;
+  min-height: 34px;
+  height: var(--search-height, 38px);
+  letter-spacing: 0;
+  opacity: 1;
+}
+.reference-site .configurable-search input::placeholder {
+  color: var(--search-input-color, #65766c);
+  opacity: 0.85;
+}
+.reference-site .configurable-search.search-preset-outline input {
+  border-radius: 7px 0 0 7px;
+}
+.reference-site .configurable-search.search-preset-outline button {
+  border-radius: 0 7px 7px 0;
+}
+.reference-site .configurable-search.search-preset-pill {
+  border-radius: 999px;
+  overflow: hidden;
+}
+.reference-site .configurable-search.search-preset-pill input,
+.reference-site .configurable-search.search-preset-pill button {
+  border-radius: 0;
+}
+.reference-site .configurable-search.search-preset-filled {
+  background: #eff3ed;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.reference-site .configurable-search.search-preset-filled input {
+  background: var(--search-input-bg, #eff3ed) !important;
+}
+.reference-site .configurable-search.search-preset-minimal input {
+  background: transparent !important;
+  color: var(--search-input-color, currentColor) !important;
+  border: 0 !important;
+  border-bottom: 1px solid currentColor !important;
+  border-radius: 0;
+}
+.reference-site .configurable-search.search-preset-minimal button {
+  background: transparent !important;
+  color: var(--search-button-color, currentColor) !important;
+  border-radius: 0;
+  border-bottom: 1px solid currentColor;
+}
+.reference-site .header-search-toggle {
+  display: none;
+}
+.homepage-editor .visual-canvas .header-adaptive {
+  position: relative !important;
+  z-index: 2;
+}
+.homepage-editor .visual-canvas .header-adaptive .news-masthead {
+  max-width: 100%;
+  padding-inline: 16px;
+}
+@media (max-width: 760px) {
+  .reference-site .header-adaptive .news-masthead,
+  .reference-site.classic .header-adaptive.header-align-center .news-masthead {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    grid-template-areas: "navigation brand tools";
+    padding: 10px 16px;
+    gap: 10px;
+    min-height: 72px;
+  }
+  .reference-site .header-adaptive .brand-column {
+    text-align: center;
+    align-items: center;
+    justify-self: center;
+  }
+  .reference-site .header-adaptive .news-logo {
+    font-size: 21px;
+    max-width: 200px;
+  }
+  .reference-site .header-adaptive .news-logo img {
+    max-height: 40px;
+  }
+  .reference-site .header-adaptive .brand-tagline {
+    display: none;
+  }
+  .reference-site .header-adaptive .portal-navigation {
+    display: contents;
+  }
+  .reference-site .header-adaptive .portal-nav-inline {
+    display: none !important;
+  }
+  .reference-site .header-adaptive .menu-toggle {
+    display: flex;
+    grid-area: navigation;
+    padding: 8px;
+    width: 40px;
+    min-height: 40px;
+    border: 0;
+  }
+  .reference-site .header-adaptive .menu-toggle > span {
+    display: none;
+  }
+  .reference-site .header-adaptive .header-tools {
+    width: 42px;
+  }
+  .reference-site .header-adaptive .header-whatsapp {
+    display: none;
+  }
+  .reference-site .header-adaptive .daily-brandbar,
+  .reference-site .header-adaptive .magazine-brandbar {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    min-height: 72px;
+    padding: 10px 16px;
+    gap: 10px;
+  }
+  .reference-site .header-adaptive .daily-edition-label {
+    display: none;
+  }
+  .reference-site .header-adaptive .daily-search,
+  .reference-site .header-adaptive .magazine-search {
+    width: 42px;
+  }
+  .reference-site .header-adaptive .daily-navigation-bar,
+  .reference-site .header-adaptive .magazine-navigation-bar {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    width: auto;
+    padding: 0;
+    margin: 0;
+  }
+  .reference-site .header-adaptive .widget-search .configurable-search {
+    display: none;
+  }
+  .reference-site .header-adaptive .header-search-toggle {
+    display: grid;
+    place-items: center;
+    background: transparent;
+    color: inherit;
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    border: 0;
+    border-radius: 8px;
+  }
+  .reference-site
+    .header-adaptive
+    .widget-search[data-search-open="true"]
+    .configurable-search {
+    display: flex;
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: calc(100% - 1px);
+    width: calc(100% - 32px);
+    max-width: none;
+    background: #fff;
+    color: #17342a;
+    padding: 9px;
+    box-shadow: 0 10px 20px #00000018;
+    border-radius: 9px;
+  }
+  .reference-site .header-adaptive.header-is-compact .news-masthead,
+  .reference-site .header-adaptive.header-is-compact .daily-brandbar,
+  .reference-site .header-adaptive.header-is-compact .magazine-brandbar {
+    min-height: var(--header-compact-height, 56px);
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reference-site .header-adaptive,
+  .reference-site .header-adaptive * {
+    transition: none !important;
+  }
+}
+.reference-site .header-adaptive .news-masthead,
+.reference-site .header-adaptive .magazine-brandbar,
+.reference-site .header-adaptive .daily-brandbar {
+  color: inherit;
+  background: transparent;
+}
+.reference-site .header-adaptive .news-logo,
+.reference-site .header-adaptive .news-logo > span {
+  color: inherit;
+}
+.reference-site .header-adaptive .daily-search,
+.reference-site .header-adaptive .magazine-search,
+.reference-site .header-adaptive .header-tools {
+  display: block;
+}
+
+.homepage-editor .visual-canvas {
+  container-type: inline-size;
+  container-name: portal-preview;
+}
+@container portal-preview (max-width:760px) {
+  .reference-site .header-adaptive .news-masthead,
+  .reference-site.classic .header-adaptive.header-align-center .news-masthead {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    grid-template-areas: "navigation brand tools";
+    padding: 10px 16px;
+    gap: 10px;
+    min-height: 72px;
+  }
+  .reference-site .header-adaptive .brand-column {
+    text-align: center;
+    align-items: center;
+    justify-self: center;
+  }
+  .reference-site .header-adaptive .news-logo {
+    font-size: 21px;
+    max-width: 200px;
+  }
+  .reference-site .header-adaptive .news-logo img {
+    max-height: 40px;
+  }
+  .reference-site .header-adaptive .brand-tagline {
+    display: none;
+  }
+  .reference-site .header-adaptive .portal-navigation {
+    display: contents;
+  }
+  .reference-site .header-adaptive .portal-nav-inline {
+    display: none !important;
+  }
+  .reference-site .header-adaptive .menu-toggle {
+    display: flex;
+    grid-area: navigation;
+    padding: 8px;
+    width: 40px;
+    min-height: 40px;
+    border: 0;
+  }
+  .reference-site .header-adaptive .menu-toggle > span {
+    display: none;
+  }
+  .reference-site .header-adaptive .header-tools {
+    width: 42px;
+  }
+  .reference-site .header-adaptive .header-whatsapp {
+    display: none;
+  }
+  .reference-site .header-adaptive .daily-brandbar,
+  .reference-site .header-adaptive .magazine-brandbar {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    min-height: 72px;
+    padding: 10px 16px;
+    gap: 10px;
+  }
+  .reference-site .header-adaptive .daily-edition-label {
+    display: none;
+  }
+  .reference-site .header-adaptive .daily-search,
+  .reference-site .header-adaptive .magazine-search {
+    width: 42px;
+  }
+  .reference-site .header-adaptive .daily-navigation-bar,
+  .reference-site .header-adaptive .magazine-navigation-bar {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    width: auto;
+    padding: 0;
+    margin: 0;
+  }
+  .reference-site .header-adaptive .widget-search .configurable-search {
+    display: none;
+  }
+  .reference-site .header-adaptive .header-search-toggle {
+    display: grid;
+    place-items: center;
+    background: transparent;
+    color: inherit;
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    border: 0;
+    border-radius: 8px;
+  }
+  .reference-site
+    .header-adaptive
+    .widget-search[data-search-open="true"]
+    .configurable-search {
+    display: flex;
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: calc(100% - 1px);
+    width: calc(100% - 32px);
+    max-width: none;
+    background: #fff;
+    color: #17342a;
+    padding: 9px;
+    box-shadow: 0 10px 20px #00000018;
+    border-radius: 9px;
+  }
+  .reference-site .header-adaptive.header-is-compact .news-masthead,
+  .reference-site .header-adaptive.header-is-compact .daily-brandbar,
+  .reference-site .header-adaptive.header-is-compact .magazine-brandbar {
+    min-height: var(--header-compact-height, 56px);
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+}
+.homepage-editor .visual-canvas .header-adaptive .news-masthead {
+  min-height: var(--header-height, 84px);
+}
+.reference-site .header-adaptive .configurable-search button {
+  max-width: 50%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

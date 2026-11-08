@@ -1,3 +1,6 @@
+import { PortalHeader } from "./portal-header";
+import { PortalWidget, PortalWidgets } from "./portal-widgets";
+import { widgetPosition, widgetEnabled } from "@/lib/widgets";
 import { AdMetricsProvider } from "./ad-metrics";
 import { AdSlotView } from "./ad-slot";
 import { GoogleAd, GoogleAdsPreview } from "./google-ad";
@@ -123,9 +126,17 @@ function EditorialHeader({
 }) {
   const daily = portal.template === "daily";
   const brand = (
-    <Link className="news-logo" href={basePath || "/"}>
-      {s.logo ? (
-        <img src={safeLink(s.logo)} alt={portal.name} />
+    <Link
+      className="news-logo"
+      href={basePath || "/"}
+      hidden={s.experience?.navigation?.showLogo === false}
+      style={{ width: s.experience?.navigation?.logoWidth }}
+    >
+      {(s.experience?.navigation?.logo ?? s.logo) ? (
+        <img
+          src={safeLink((s.experience?.navigation?.logo ?? s.logo) || "")}
+          alt={portal.name}
+        />
       ) : (
         <span>{portal.name}</span>
       )}
@@ -136,26 +147,24 @@ function EditorialHeader({
       items={links}
       basePath={basePath}
       name={portal.name}
-      logo={s.logo}
+      logo={s.experience?.navigation?.logo ?? s.logo}
       config={s.experience?.navigation}
     />
   );
-  const search = (
-    <form className="public-search" action={`${basePath}/busca`}>
-      <input
-        aria-label="Buscar notícias"
-        type="search"
-        name="q"
-        placeholder="O que você procura?"
-        required
-        disabled={preview}
+  const search =
+    widgetPosition(s.experience || {}, "search") === "header" ? (
+      <PortalWidget
+        kind="search"
+        portalId={portal.id}
+        settings={s}
+        basePath={basePath}
+        preview={preview}
       />
-      <button disabled={preview}>Buscar</button>
-    </form>
-  );
+    ) : null;
   return (
-    <header
-      data-edit-region="navigation"
+    <PortalHeader
+      preview={preview}
+      config={s.experience?.navigation}
       className={`reference-header editorial-header editorial-menu-${s.experience?.navigation?.layout || "horizontal"} ${daily ? "daily-masthead" : "magazine-masthead"} ${s.experience?.navigation?.sticky ? "header-sticky" : ""} editorial-logo-${s.experience?.navigation?.logoAlign || "center"}`}
       style={{
         backgroundColor: s.experience?.navigation?.customColors
@@ -197,7 +206,7 @@ function EditorialHeader({
         </>
       )}
       {s.header && <p className="header-editorial-note">{s.header}</p>}
-    </header>
+    </PortalHeader>
   );
 }
 export function NewsShell({
@@ -208,6 +217,7 @@ export function NewsShell({
   basePath,
   children,
   preview = false,
+  isHomepage = true,
 }: {
   portal: Portal;
   categories: Category[];
@@ -216,6 +226,7 @@ export function NewsShell({
   basePath: string;
   children: React.ReactNode;
   preview?: boolean;
+  isHomepage?: boolean;
 }) {
   const s = presentationSettings(portal.settings, portal.template);
   const boundIds = new Set(
@@ -268,8 +279,9 @@ export function NewsShell({
             </div>
           )}
           {portal.template === "classic" ? (
-            <header
-              data-edit-region="navigation"
+            <PortalHeader
+              preview={preview}
+              config={s.experience?.navigation}
               className={`reference-header nav-logo-${s.experience?.navigation?.logoAlign || "left"} ${s.experience?.navigation?.sticky ? "header-sticky" : ""}`}
               style={{
                 backgroundColor: s.experience?.navigation?.customColors
@@ -282,9 +294,19 @@ export function NewsShell({
             >
               <div className={`news-masthead masthead-${portal.template}`}>
                 <div className="brand-column">
-                  <Link className="news-logo" href={basePath || "/"}>
-                    {s.logo ? (
-                      <img src={safeLink(s.logo)} alt={portal.name} />
+                  <Link
+                    className="news-logo"
+                    href={basePath || "/"}
+                    hidden={s.experience?.navigation?.showLogo === false}
+                    style={{ width: s.experience?.navigation?.logoWidth }}
+                  >
+                    {(s.experience?.navigation?.logo ?? s.logo) ? (
+                      <img
+                        src={safeLink(
+                          (s.experience?.navigation?.logo ?? s.logo) || "",
+                        )}
+                        alt={portal.name}
+                      />
                     ) : (
                       <span>{portal.name}</span>
                     )}
@@ -295,35 +317,19 @@ export function NewsShell({
                   items={links}
                   basePath={basePath}
                   name={portal.name}
-                  logo={s.logo}
+                  logo={s.experience?.navigation?.logo ?? s.logo}
                   config={s.experience?.navigation}
                 />
                 <div className="header-tools">
-                  {preview ? (
-                    <div className="public-search">
-                      <input
-                        aria-label="Buscar notícias"
-                        placeholder={`Encontre no ${portal.name}`}
-                        disabled
-                      />
-                      <button type="button" disabled>
-                        Buscar
-                      </button>
-                    </div>
-                  ) : (
-                    <form
-                      className="public-search"
-                      action={`${basePath}/busca`}
-                    >
-                      <input
-                        aria-label="Buscar notícias"
-                        type="search"
-                        name="q"
-                        placeholder={`Encontre no ${portal.name}`}
-                        required
-                      />
-                      <button>Buscar</button>
-                    </form>
+                  {widgetPosition(s.experience || {}, "search") ===
+                    "header" && (
+                    <PortalWidget
+                      kind="search"
+                      portalId={portal.id}
+                      settings={s}
+                      basePath={basePath}
+                      preview={preview}
+                    />
                   )}
                   {s.whatsappUrl && (
                     <a
@@ -339,7 +345,7 @@ export function NewsShell({
                 </div>
               </div>
               {s.header && <p className="header-editorial-note">{s.header}</p>}
-            </header>
+            </PortalHeader>
           ) : (
             <EditorialHeader
               portal={portal}
@@ -349,13 +355,71 @@ export function NewsShell({
               preview={preview}
             />
           )}
+          <div
+            className="portal-utility-region news-container"
+            data-utility-location="header"
+          >
+            <PortalWidgets
+              location="header"
+              settings={presentationSettings(portal.settings, portal.template)}
+              portalId={portal.id}
+              basePath={basePath}
+              preview={preview}
+              sections={(portal.home_published.length
+                ? portal.home_published
+                : referenceSections(categories, portal.template)
+              ).map((b) => b.id)}
+              home={isHomepage}
+              exclude={["search"]}
+            />
+          </div>
           <main className="news-container">
+            <div
+              className="portal-utility-region"
+              data-utility-location="before-content"
+            >
+              <PortalWidgets
+                location="before-content"
+                settings={presentationSettings(
+                  portal.settings,
+                  portal.template,
+                )}
+                portalId={portal.id}
+                basePath={basePath}
+                preview={preview}
+                sections={(portal.home_published.length
+                  ? portal.home_published
+                  : referenceSections(categories, portal.template)
+                ).map((b) => b.id)}
+                home={isHomepage}
+              />
+            </div>
             <Campaigns campaigns={automaticCampaigns} position="header" />
             <Campaigns
               campaigns={automaticCampaigns}
               position="before-content"
             />
             {children}
+            <div
+              className="portal-utility-region"
+              data-utility-location="after-content"
+            >
+              <PortalWidgets
+                location="after-content"
+                settings={presentationSettings(
+                  portal.settings,
+                  portal.template,
+                )}
+                portalId={portal.id}
+                basePath={basePath}
+                preview={preview}
+                sections={(portal.home_published.length
+                  ? portal.home_published
+                  : referenceSections(categories, portal.template)
+                ).map((b) => b.id)}
+                home={isHomepage}
+              />
+            </div>
             <Campaigns
               campaigns={automaticCampaigns}
               position="after-content"
@@ -406,7 +470,8 @@ export function NewsShell({
               </section>
             )}
             {(s.socialCards?.some((c) => c.image) ||
-              (s.contactEnabled &&
+              (widgetEnabled(s, "contact") &&
+                widgetPosition(s.experience || {}, "contact") === "community" &&
                 s.experience?.contact?.mode !== "hidden")) && (
               <section className="community-section">
                 <div className="community-cards">
@@ -427,48 +492,37 @@ export function NewsShell({
                       </a>
                     ))}
                 </div>
-                {s.contactEnabled && (
-                  <ContactForm
-                    config={s.experience?.contact}
-                    portalId={portal.id}
-                    title={s.contactTitle || "Fale com a redação"}
-                    privacyUrl={
-                      s.privacyUrl
-                        ? siteLink(s.privacyUrl, basePath)
-                        : undefined
-                    }
-                    preview={preview}
-                  />
-                )}
+                {widgetEnabled(s, "contact") &&
+                  widgetPosition(s.experience || {}, "contact") ===
+                    "community" && (
+                    <PortalWidget
+                      kind="contact"
+                      portalId={portal.id}
+                      settings={s}
+                      basePath={basePath}
+                      preview={preview}
+                    />
+                  )}
               </section>
             )}
           </main>
-          {(s.newsletterEnabled || s.whatsappUrl) && (
-            <section className="news-newsletter">
-              <div>
-                {s.newsletterEnabled && (
-                  <NewsletterForm
-                    portalId={portal.id}
-                    title={s.newsletterTitle || "Receba novidades por e-mail"}
-                    preview={preview}
-                  />
-                )}
-                {s.whatsappUrl && (
-                  <div className="newsletter-whatsapp">
-                    <h2>{s.newsletterText}</h2>
-                    <a
-                      href={safeLink(s.whatsappUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <MessageCircle size={19} />
-                      {s.whatsappText}
-                    </a>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
+          <div
+            className="portal-utility-region"
+            data-utility-location="before-footer"
+          >
+            <PortalWidgets
+              location="before-footer"
+              settings={presentationSettings(portal.settings, portal.template)}
+              portalId={portal.id}
+              basePath={basePath}
+              preview={preview}
+              sections={(portal.home_published.length
+                ? portal.home_published
+                : referenceSections(categories, portal.template)
+              ).map((b) => b.id)}
+              home={isHomepage}
+            />
+          </div>
           <footer
             data-edit-region="footer"
             className={`news-footer footer-layout-${s.experience?.footer?.layout || "columns"}`}
@@ -480,7 +534,11 @@ export function NewsShell({
                   s.experience?.footer?.columns || 4,
                   1 +
                     (s.experience?.footer?.showMenu !== false ? 1 : 0) +
-                    (s.experience?.footer?.showCommercial !== false ? 1 : 0) +
+                    (widgetEnabled(s, "commercial") &&
+                    widgetPosition(s.experience || {}, "commercial") ===
+                      "footer"
+                      ? 1
+                      : 0) +
                     (s.experience?.footer?.showSocials !== false &&
                     s.socials?.length
                       ? 1
@@ -492,7 +550,11 @@ export function NewsShell({
             <div className="footer-columns">
               <section>
                 {s.experience?.footer?.showLogo !== false && (
-                  <Link className="news-logo" href={basePath || "/"}>
+                  <Link
+                    className="news-logo"
+                    href={basePath || "/"}
+                    style={{ width: s.experience?.footer?.logoWidth }}
+                  >
                     {s.experience?.footer?.logo || s.logo ? (
                       <img
                         src={safeLink(
@@ -530,82 +592,21 @@ export function NewsShell({
                   )}
                 </nav>
               )}
-              {s.experience?.footer?.showCommercial !== false && (
-                <section
-                  className="footer-commercial"
-                  style={{
-                    background: s.experience?.footer?.advertBackground,
-                    color: s.experience?.footer?.advertColor,
-                  }}
-                >
-                  {s.experience?.footer?.advertImage && (
-                    <a
-                      className="footer-advert-image"
-                      href={siteLink(
-                        s.experience.footer.advertLink || "",
-                        basePath,
-                      )}
-                      target="_blank"
-                      rel="sponsored noopener noreferrer"
-                    >
-                      <img
-                        src={safeLink(s.experience.footer.advertImage)}
-                        alt={
-                          s.experience.footer.advertTitle ||
-                          "Anuncie com a gente"
-                        }
-                      />
-                    </a>
-                  )}
-                  {s.experience?.footer?.advertVideo && (
-                    <div className="footer-advert-video">
-                      {youtubeEmbed(s.experience.footer.advertVideo) ? (
-                        <iframe
-                          title="Conheça nossas oportunidades"
-                          src={youtubeEmbed(s.experience.footer.advertVideo)}
-                          allowFullScreen
-                          loading="lazy"
-                        />
-                      ) : (
-                        <video
-                          controls
-                          src={safeLink(s.experience.footer.advertVideo)}
-                        />
-                      )}
-                    </div>
-                  )}
-                  {s.experience?.footer?.advertLink ? (
-                    <a
-                      className="footer-advert-cta"
-                      href={siteLink(s.experience.footer.advertLink, basePath)}
-                    >
-                      <strong>
-                        {s.experience.footer.advertTitle ||
-                          "Anuncie com a gente"}
-                      </strong>
-                      <p>{s.commercialText}</p>
-                      <span>
-                        Conheça as oportunidades{" "}
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      </span>
-                    </a>
-                  ) : (
-                    <p>{s.commercialText}</p>
-                  )}
-                  {s.commercialPhone && (
-                    <a
-                      href={`tel:${s.commercialPhone.replace(/[^+0-9]/g, "")}`}
-                    >
-                      {s.commercialPhone}
-                    </a>
-                  )}
-                  {s.commercialEmail && (
-                    <a href={`mailto:${s.commercialEmail}`}>
-                      {s.commercialEmail}
-                    </a>
-                  )}
-                </section>
-              )}
+              <PortalWidgets
+                location="footer"
+                settings={presentationSettings(
+                  portal.settings,
+                  portal.template,
+                )}
+                portalId={portal.id}
+                basePath={basePath}
+                preview={preview}
+                sections={(portal.home_published.length
+                  ? portal.home_published
+                  : referenceSections(categories, portal.template)
+                ).map((b) => b.id)}
+                home={isHomepage}
+              />
               {s.experience?.footer?.showSocials !== false &&
                 !!s.socials?.length && (
                   <section className="footer-social">
@@ -626,17 +627,18 @@ export function NewsShell({
                   </section>
                 )}
             </div>
-            {s.experience?.footer?.showSearch && (
-              <form className="footer-search" action={`${basePath}/busca`}>
-                <input
-                  name="q"
-                  placeholder="O que você procura?"
-                  aria-label="Buscar no rodapé"
-                  disabled={preview}
-                />
-                <button disabled={preview}>Buscar</button>
-              </form>
-            )}
+            {s.experience?.footer?.showSearch &&
+              widgetPosition(s.experience || {}, "search") !== "footer" && (
+                <div className="footer-search">
+                  <PortalWidget
+                    kind="search"
+                    settings={s}
+                    portalId={portal.id}
+                    basePath={basePath}
+                    preview={preview}
+                  />
+                </div>
+              )}
             {s.footer && <p className="footer-note">{s.footer}</p>}
             <small>
               {s.experience?.footer?.copyright ||
@@ -1541,7 +1543,29 @@ export function Homepage({
         />
       </div>
     );
-    return frame ? frame(s, node) : node;
+    return (
+      <Fragment key={s.id}>
+        <PortalWidgets
+          location="before-section"
+          sectionId={s.id}
+          settings={presentationSettings(portal.settings, portal.template)}
+          portalId={portal.id}
+          basePath={basePath}
+          preview={preview}
+          sections={blocks.map((b) => b.id)}
+        />
+        {frame ? frame(s, node) : node}
+        <PortalWidgets
+          location="after-section"
+          sectionId={s.id}
+          settings={presentationSettings(portal.settings, portal.template)}
+          portalId={portal.id}
+          basePath={basePath}
+          preview={preview}
+          sections={blocks.map((b) => b.id)}
+        />
+      </Fragment>
+    );
   };
   return (
     <div

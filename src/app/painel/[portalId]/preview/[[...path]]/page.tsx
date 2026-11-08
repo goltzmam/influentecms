@@ -1,4 +1,4 @@
-import {campaignMatches} from "@/lib/experience";
+import { campaignMatches } from "@/lib/experience";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { requirePortal } from "@/lib/portal";
@@ -21,7 +21,13 @@ export default async function Preview({
 }) {
   const { portalId, path = [] } = await params;
   const { client, portal } = await requirePortal(portalId);
-  const draftDesign=await client.rpc('get_home_design',{target:portalId});if(draftDesign.error)throw new Error('Não foi possível carregar o visual salvo.');if(draftDesign.data){portal.settings={...portal.settings,...draftDesign.data.settings};portal.template=draftDesign.data.template||portal.template;}
+  const draftDesign = await client.rpc("get_home_design", { target: portalId });
+  if (draftDesign.error)
+    throw new Error("Não foi possível carregar o visual salvo.");
+  if (draftDesign.data) {
+    portal.settings = { ...portal.settings, ...draftDesign.data.settings };
+    portal.template = draftDesign.data.template || portal.template;
+  }
   const [a, c, b, p, d] = await Promise.all([
     client
       .from("articles")
@@ -64,7 +70,13 @@ export default async function Preview({
     if (error || !data) notFound();
     article = data as Article;
   } else if (path.length) notFound();
-  const visibleCampaigns=campaigns.filter(campaign=>campaignMatches(campaign.creative,{kind:article?'article':'home',slug:article?.slug,categoryId:article?.category_id||undefined}));
+  const visibleCampaigns = campaigns.filter((campaign) =>
+    campaignMatches(campaign.creative, {
+      kind: article ? "article" : "home",
+      slug: article?.slug,
+      categoryId: article?.category_id || undefined,
+    }),
+  );
   return (
     <NewsShell
       portal={portal}
@@ -73,6 +85,7 @@ export default async function Preview({
       partners={partners}
       basePath={basePath}
       preview
+      isHomepage={!article}
     >
       {article ? (
         <NewsArticle
@@ -81,7 +94,8 @@ export default async function Preview({
           campaigns={visibleCampaigns}
         />
       ) : (
-        <Homepage preview
+        <Homepage
+          preview
           portal={portal}
           articles={articles}
           categories={categories}

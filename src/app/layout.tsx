@@ -5,6 +5,8 @@ import "./portal-experience.css";
 import "./portal-themes.css";
 import "./portal-advertising.css";
 import "./admin-premium.css";
+import "./portal-widgets.css";
+import "./portal-header.css";
 export const metadata: Metadata = {
   title: "Influente CMS",
   description: "Central editorial privada da Influente Comunicação",
