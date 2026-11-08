@@ -1,4 +1,6 @@
 import { PortalDeletion } from "@/components/portal-deletion";
+import { assignDomain } from "../../domain-actions";
+import { DomainPicker } from "@/components/domain-picker";
 import { mailDeliveryStatus } from "@/lib/mail-delivery";
 import { DomainConnection } from "@/components/domain-connection";
 import { refreshBrandArtwork } from "../../artwork-actions";
@@ -116,7 +118,7 @@ export default async function PortalAdmin({
 }) {
   const { portalId, section = [] } = await params;
   const query = await searchParams;
-  const { client, portal, isOwner } = await requirePortal(portalId);
+  const { client, portal, isOwner, publicUrl } = await requirePortal(portalId);
   const key = section[0] || "";
   if (key === "preview") notFound();
   if (key && !titles[key]) notFound();
@@ -162,7 +164,7 @@ export default async function PortalAdmin({
           <Link href={`${base}/noticias/nova`}>＋ Escrever notícia</Link>
           <Link href={`${base}/homepage`}>▦ Organizar homepage</Link>
           <Link href={`${base}/aparencia`}>◈ Personalizar portal</Link>
-          <Link href={`/p/${portal.slug}`} target="_blank">
+          <Link href={publicUrl} target="_blank">
             ↗ Abrir portal
           </Link>
         </div>
@@ -518,7 +520,7 @@ export default async function PortalAdmin({
               <SubmitButton>Salvar personalização</SubmitButton>
               <a
                 className="text-link"
-                href={`/p/${portal.slug}`}
+                href={publicUrl}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -759,7 +761,7 @@ export default async function PortalAdmin({
               </div>
               <div className="row-actions">
                 <a
-                  href={`/p/${portal.slug}/pagina/${p.slug}`}
+                  href={`${publicUrl}/pagina/${p.slug}`}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -939,6 +941,16 @@ export default async function PortalAdmin({
     const domains = check(
       await client.from("domains").select("*").eq("portal_id", portalId),
     );
+    const available = isOwner
+      ? check(
+          await client
+            .from("domains")
+            .select("id,hostname,verified")
+            .eq("organization_id", portal.organization_id)
+            .is("portal_id", null)
+            .order("hostname"),
+        )
+      : [];
     const baseDomain = process.env.PORTAL_BASE_DOMAIN;
     body = (
       <div className="editor-grid">
@@ -975,13 +987,29 @@ export default async function PortalAdmin({
                 <form action={deleteDomain}>
                   <PortalId id={portalId} />
                   <input type="hidden" name="id" value={d.id} />
-                  <DeleteButton />
+                  <button type="submit" className="button button-outline">
+                    Desvincular deste portal
+                  </button>
                 </form>
               </div>
             </section>
           ))}
         </div>
         <aside>
+          {isOwner && (
+            <section className="panel">
+              <h2>Usar domínio disponível</h2>
+              <form action={assignDomain}>
+                <input type="hidden" name="target_portal_id" value={portalId} />
+                <input type="hidden" name="return_portal_id" value={portalId} />
+                <DomainPicker domains={available} required />
+                <SubmitButton>Vincular domínio</SubmitButton>
+              </form>
+              <Link className="text-link" href="/painel/dominios">
+                Abrir central de domínios →
+              </Link>
+            </section>
+          )}
           <form action={addDomain} className="panel">
             <PortalId id={portalId} />
             <h2>Conectar domínio</h2>
@@ -1008,7 +1036,7 @@ export default async function PortalAdmin({
           <p className="muted">{heading[1]}</p>
         </div>
         <Button variant="outline" asChild>
-          <Link href={`/p/${portal.slug}`} target="_blank">
+          <Link href={publicUrl} target="_blank">
             Ver portal ↗
           </Link>
         </Button>

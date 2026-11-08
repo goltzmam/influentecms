@@ -60,7 +60,7 @@ export function PortalDeletion({
         <p>
           O portal sairá do ar. Notícias, páginas, mídia, campanhas, parceiros,
           métricas e acessos da equipe deste portal serão removidos. Os domínios
-          serão desconectados.
+          ficarão disponíveis na central para vincular a outro portal.
         </p>
         <p className="delete-note">
           Esta ação não pode ser desfeita e afeta somente este portal.

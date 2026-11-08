@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { portalUrl } from "@/lib/portal-url";
 import {
   Globe2,
   Plus,
@@ -51,6 +52,14 @@ export default async function Dashboard({
     throw new Error(
       "Não foi possível carregar o dashboard. Tente novamente em instantes.",
     );
+  const domains = await client
+    .from("domains")
+    .select("hostname,portal_id,verified")
+    .eq("organization_id", membership.organization_id)
+    .eq("verified", true)
+    .order("created_at")
+    .order("hostname");
+  if (domains.error) throw new Error("Não foi possível carregar os endereços.");
   return (
     <>
       <div className="page-heading">
@@ -183,7 +192,11 @@ export default async function Dashboard({
                 </div>
               </Link>
               <div className="portal-card-footer">
-                <a href={`/p/${p.slug}`} target="_blank" rel="noreferrer">
+                <a
+                  href={portalUrl(p, domains.data || [])}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Ver portal <ArrowUpRight size={13} />
                 </a>
                 <PortalDeletion id={p.id} name={p.name} compact />

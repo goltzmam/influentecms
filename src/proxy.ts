@@ -20,28 +20,11 @@ export async function proxy(request: NextRequest) {
     const client = createPublicClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    let slug: string | undefined;
-    if (baseDomain && host.endsWith(`.${baseDomain}`)) {
-      const candidate = host.slice(0, -baseDomain.length - 1);
-      if (/^[a-z0-9]+(-[a-z0-9]+)*$/.test(candidate)) slug = candidate;
-    } else {
-      const { data, error } = await client
-        .from("domains")
-        .select("portal_id")
-        .eq("hostname", host)
-        .eq("verified", true)
-        .maybeSingle();
-      if (error)
-        return new NextResponse("Portal indisponível", { status: 503 });
-      if (data) {
-        const { data: portal } = await client
-          .from("portals")
-          .select("slug")
-          .eq("id", data.portal_id)
-          .single();
-        slug = portal?.slug;
-      }
-    }
+    const { data: slug, error } = await client.rpc("resolve_portal_hostname", {
+      p_hostname: host,
+      p_base: baseDomain || null,
+    });
+    if (error) return new NextResponse("Portal indisponível", { status: 503 });
     if (!slug)
       return new NextResponse("Domínio não configurado", { status: 404 });
     const target = request.nextUrl.clone();

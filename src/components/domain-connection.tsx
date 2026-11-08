@@ -9,13 +9,13 @@ export function DomainConnection({
   initial,
   enabled,
 }: {
-  portalId: string;
+  portalId?: string;
   initial: DomainView;
   enabled: boolean;
 }) {
   const [domain, setDomain] = useState(initial),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
+    [error, setError] = useState(initial.provider_status?.last_error || ""),
     [automatic, setAutomatic] = useState(enabled),
     [copied, setCopied] = useState("");
   const running = useRef(false);
@@ -26,7 +26,8 @@ export function DomainConnection({
     setBusy(true);
     try {
       const f = new FormData();
-      f.set("portal_id", portalId);
+      if (portalId) f.set("portal_id", portalId);
+      f.set("domain_id", initial.id);
       f.set("hostname", initial.hostname);
       const result = await checkDomainConnection(f);
       setError(result.error || "");
@@ -41,15 +42,19 @@ export function DomainConnection({
       running.current = false;
       setBusy(false);
     }
-  }, [portalId, initial.hostname, router]);
+  }, [portalId, initial.hostname, initial.id, router]);
   useEffect(() => {
-    if (!automatic || domain.verified) return;
+    if (!automatic) return;
     void check();
-    const timer = setInterval(() => {
-      if (document.visibilityState === "visible") void check();
-    }, 30000);
+    const timer = setInterval(
+      () => {
+        if (document.visibilityState === "visible") void check();
+      },
+      domain.verified ? 300000 : 30000,
+    );
     return () => clearInterval(timer);
   }, [automatic, domain.verified, check]);
+  useEffect(() => setDomain(initial), [initial]);
   const records = domainRecords(domain.hostname, domain.provider_status || {});
   return (
     <div className="domain-connection">
@@ -62,7 +67,9 @@ export function DomainConnection({
         <div>
           <strong>
             {domain.verified
-              ? "Conectado ao portal"
+              ? portalId
+                ? "Conectado ao portal"
+                : "DNS confirmado · disponível"
               : "Falta apontar seu domínio"}
           </strong>
           <p>

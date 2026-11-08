@@ -1,4 +1,5 @@
 "use client";
+import { DomainPicker, type AvailableDomain } from "./domain-picker";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -115,13 +116,16 @@ function Preview({
 }
 export function AiPortalStudio({
   configured,
+  domains = [],
   history,
   migrationReady,
 }: {
   configured: boolean;
+  domains?: AvailableDomain[];
   history: History[];
   migrationReady: boolean;
 }) {
+  const [domainId, setDomainId] = useState("");
   const router = useRouter();
   const abort = useRef<AbortController | null>(null);
   const [requireReferences, setRequireReferences] = useState(true);
@@ -254,7 +258,12 @@ export function AiPortalStudio({
       const response = await fetch("/api/ai/portals/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId: result.jobId, edits, publishArticles }),
+        body: JSON.stringify({
+          jobId: result.jobId,
+          edits,
+          publishArticles,
+          domainId: domainId || null,
+        }),
       });
       const data = await response.json().catch(() => {
         throw new Error(
@@ -732,6 +741,11 @@ export function AiPortalStudio({
                   identidade, imagens editoriais e espaços demonstrativos de
                   publicidade e parceiros. Você poderá alterar tudo depois.
                 </p>
+                <DomainPicker
+                  domains={domains}
+                  value={domainId}
+                  onChange={setDomainId}
+                />
                 <label className="check-label">
                   <input
                     type="checkbox"

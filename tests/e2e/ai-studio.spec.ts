@@ -6,7 +6,8 @@ let client: SupabaseClient,
   organizationId: string,
   userId: string,
   email: string,
-  password: string;
+  password: string,
+  domainId: string;
 const suffix = randomUUID().slice(0, 8),
   slug = `portal-${suffix}`;
 test.beforeAll(async () => {
@@ -41,6 +42,18 @@ test.beforeAll(async () => {
     .from("organization_members")
     .insert({ organization_id: organizationId, user_id: userId });
   if (member.error) throw member.error;
+  const domain = await client
+    .from("domains")
+    .insert({
+      organization_id: organizationId,
+      portal_id: null,
+      hostname: `ai-${suffix}.example.test`,
+      verified: true,
+    })
+    .select("id")
+    .single();
+  if (domain.error) throw domain.error;
+  domainId = domain.data.id;
 });
 test.afterAll(async () => {
   if (!client) return;
@@ -135,6 +148,9 @@ test("Estúdio IA recupera plano, pré-visualiza e cria portal editável real", 
   await page.getByRole("button", { name: "Pré-visualizar portal" }).click();
   await expect(page.getByRole("dialog")).toContainText("SaudeFIT Editável");
   await page.getByRole("button", { name: "Fechar prévia" }).click();
+  await page
+    .getByLabel("Domínio para este portal", { exact: true })
+    .selectOption(domainId);
   await page.getByRole("button", { name: "Criar portal editável" }).click();
   await expect(page).toHaveURL(/\/painel\/[a-f0-9-]+\?notice=/);
   const portal = await client
@@ -143,6 +159,15 @@ test("Estúdio IA recupera plano, pré-visualiza e cria portal editável real", 
     .eq("slug", slug)
     .single();
   if (portal.error) throw portal.error;
+  expect(
+    (
+      await client
+        .from("domains")
+        .select("portal_id")
+        .eq("id", domainId)
+        .single()
+    ).data?.portal_id,
+  ).toBe(portal.data.id);
   expect(portal.data.settings.logo).toContain("/storage/v1/object/public/");
   const articles = await client
     .from("articles")

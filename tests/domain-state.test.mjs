@@ -90,3 +90,26 @@ test("Domínio só conecta com projeto, hostname, propriedade e DNS confirmados"
     /não está associado/,
   );
 });
+
+test("Verificação parcial de propriedade preserva associação e recomendações do domínio", async () => {
+  const result = await resolveDomain(
+    "news.example.com",
+    "prj_test",
+    async (path) =>
+      path.endsWith("/verify")
+        ? { verified: true }
+        : path.includes("/config?")
+          ? {
+              misconfigured: false,
+              recommendedCNAME: [{ rank: 1, value: "target.example.net" }],
+            }
+          : {
+              name: "news.example.com",
+              projectId: "prj_test",
+              apexName: "example.com",
+              verified: false,
+            },
+  );
+  assert.equal(result.verified, true);
+  assert.equal(result.provider_status.apexName, "example.com");
+});

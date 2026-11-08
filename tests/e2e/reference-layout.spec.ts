@@ -342,6 +342,20 @@ test("Três composições independentes com mesma paleta e conteúdo; contato e 
       path: `/tmp/template-${created.indexOf(portal)}-mobile.png`,
       fullPage: true,
     });
+    for (const width of [320, 375, 768, 820, 1024, 1920]) {
+      await page.setViewportSize({ width, height: width < 600 ? 844 : 1024 });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 2,
+        ),
+        `${portal.name} at ${width}px`,
+      ).toBe(true);
+      if (width === 768)
+        await page.screenshot({
+          path: `/tmp/template-${created.indexOf(portal)}-tablet.png`,
+          fullPage: true,
+        });
+    }
     await page.setViewportSize({ width: 768, height: 1024 });
     expect(
       await page.evaluate(

@@ -8,8 +8,17 @@ export default async function AiStudioPage() {
     .eq("organization_id", membership.organization_id)
     .order("created_at", { ascending: false })
     .limit(5);
+  const domains = await client
+    .from("domains")
+    .select("id,hostname,verified")
+    .eq("organization_id", membership.organization_id)
+    .is("portal_id", null)
+    .order("hostname");
+  if (domains.error)
+    throw new Error("Não foi possível carregar os domínios disponíveis.");
   return (
     <AiPortalStudio
+      domains={domains.data || []}
       configured={Boolean(
         process.env.GEMINI_API_KEY ||
         process.env.GEMINI_API ||

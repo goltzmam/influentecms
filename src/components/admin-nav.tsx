@@ -24,7 +24,7 @@ export function AdminNav({
   isOwner = true,
 }: {
   isOwner?: boolean;
-  portals: { id: string; name: string; slug: string }[];
+  portals: { id: string; name: string; slug: string; url?: string }[];
 }) {
   const path = usePathname(),
     router = useRouter();
@@ -91,6 +91,15 @@ export function AdminNav({
             Criar com IA
           </Link>
         )}
+        {isOwner && (
+          <Link
+            href="/painel/dominios"
+            className={path === "/painel/dominios" ? "nav-active" : ""}
+          >
+            <Globe2 size={17} />
+            Central de domínios
+          </Link>
+        )}
         {portal && (
           <>
             <p className="workspace-label">{portal.name}</p>
@@ -113,7 +122,11 @@ export function AdminNav({
                 {label}
               </Link>
             ))}
-            <a href={`/p/${portal.slug}`} target="_blank" rel="noreferrer">
+            <a
+              href={portal.url || `/p/${portal.slug}`}
+              target="_blank"
+              rel="noreferrer"
+            >
               <ExternalLink size={17} />
               Abrir portal
             </a>

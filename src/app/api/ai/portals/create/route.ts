@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     const input = z
       .object({
         jobId: z.uuid(),
+        domainId: z.uuid().nullable().optional(),
         edits: editsSchema,
         publishArticles: z.boolean().default(true),
       })
@@ -35,11 +36,24 @@ export async function POST(request: Request) {
         409,
         "O portal deste projeto foi removido. Gere um novo projeto.",
       );
-    if (job.status === "created" && job.visual_status === "ready")
+    if (job.status === "created" && job.visual_status === "ready") {
+      if (input.data.domainId) {
+        const bound = await auth.client.rpc("assign_portal_domain", {
+          p_domain: input.data.domainId,
+          p_portal: job.generated_portal_id,
+          p_transfer: false,
+        });
+        if (bound.error)
+          throw new ApiFailure(
+            409,
+            "O domínio não está disponível. Escolha outro endereço.",
+          );
+      }
       return Response.json({
         portalId: job.generated_portal_id,
         warnings: job.warnings || [],
       });
+    }
     if (!["ready", "created"].includes(job.status))
       throw new ApiFailure(409, "Aguarde a geração do projeto antes de criar.");
     const plan = personalize(blueprintSchema.parse(job.plan), input.data.edits);
@@ -47,12 +61,18 @@ export async function POST(request: Request) {
     const created =
       job.status === "created"
         ? { data: job.generated_portal_id, error: null }
-        : await auth.client.rpc("create_portal_from_ai", {
+        : await auth.client.rpc("create_ai_portal_with_domain", {
             p_job: job.id,
             p_plan: payload,
             p_publish_articles: input.data.publishArticles,
+            p_domain: input.data.domainId || null,
           });
     if (created.error) {
+      if (/domain_|portal_unavailable/.test(created.error.message || ""))
+        throw new ApiFailure(
+          409,
+          "O domínio escolhido já está em uso ou não está disponível. Escolha outro e tente novamente.",
+        );
       if (created.error.code === "23505")
         throw new ApiFailure(
           409,
@@ -64,6 +84,18 @@ export async function POST(request: Request) {
       );
     }
     const portalId = created.data as string;
+    if (job.status === "created" && input.data.domainId) {
+      const bound = await auth.client.rpc("assign_portal_domain", {
+        p_domain: input.data.domainId,
+        p_portal: portalId,
+        p_transfer: false,
+      });
+      if (bound.error)
+        throw new ApiFailure(
+          409,
+          "O domínio não está disponível. Escolha outro endereço.",
+        );
+    }
     const claim = await auth.client.rpc("claim_ai_visuals", { p_job: job.id });
     if (claim.error)
       throw new ApiFailure(

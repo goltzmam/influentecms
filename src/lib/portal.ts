@@ -1,3 +1,4 @@
+import { portalUrl } from "./portal-url";
 import { notFound } from "next/navigation";
 import { requireAccess } from "./auth";
 import type { Portal } from "./types";
@@ -18,5 +19,19 @@ export async function requirePortal(id: string) {
     (auth.isOwner && data.organization_id !== auth.membership.organization_id)
   )
     notFound();
-  return { ...auth, portal: data as Portal };
+  const domains = await auth.client
+    .from("domains")
+    .select("hostname,verified,portal_id")
+    .eq("portal_id", id)
+    .eq("verified", true)
+    .order("created_at")
+    .order("hostname")
+    .limit(1);
+  if (domains.error)
+    throw new Error("Não foi possível carregar o endereço do portal.");
+  return {
+    ...auth,
+    portal: data as Portal,
+    publicUrl: portalUrl(data, domains.data || []),
+  };
 }

@@ -1,10 +1,13 @@
 "use client";
+import { DomainPicker, type AvailableDomain } from "./domain-picker";
 import { useState } from "react";
 import { Button } from "./ui/button";
 export function PortalCreator({
   action,
+  domains = [],
 }: {
   action: (f: FormData) => Promise<void>;
+  domains?: AvailableDomain[];
 }) {
   const [template, setTemplate] = useState("classic"),
     [color, setColor] = useState("#6324dc"),
@@ -39,9 +42,10 @@ export function PortalCreator({
             />
           </label>
           <p className="field-hint">
-            Disponível em /p/meu-portal e no subdomínio configurado. Conecte seu
-            domínio depois.
+            Seu endereço provisório continua disponível enquanto você conecta o
+            domínio.
           </p>
+          <DomainPicker domains={domains} />
           <label>
             URL do logotipo
             <input name="logo" type="url" placeholder="https://..." />

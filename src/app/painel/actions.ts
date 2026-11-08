@@ -10,7 +10,6 @@ import { requireAdmin } from "@/lib/auth";
 import { requirePortal } from "@/lib/portal";
 import {
   articleSchema,
-  domainSchema,
   imageSchema,
   linkSchema,
   sectionsSchema,
@@ -19,9 +18,11 @@ import {
 } from "@/lib/validation";
 import { cleanHtml } from "@/lib/content";
 import { advertisingSchema } from "@/lib/advertising";
-import { resolveDomain } from "@/lib/domain-state";
-import { vercel } from "@/lib/vercel";
-import { serviceClient } from "@/lib/supabase/service";
+import {
+  verifyManagedDomain,
+  registerDomain,
+  releaseDomain,
+} from "./domain-actions";
 const str = (f: FormData, k: string) => String(f.get(k) || "");
 function date(f: FormData, k: string) {
   const v = str(f, k);
@@ -55,24 +56,26 @@ export async function createPortal(form: FormData) {
         logo: imageSchema,
       })
       .parse(Object.fromEntries(form));
-    const { data, error } = await client
-      .from("portals")
-      .insert({
-        organization_id: membership.organization_id,
-        name: input.name,
-        slug: input.slug,
-        template: input.template,
-        settings: {
-          color: input.color,
-          accentColor: "#d5ff00",
-          logo: input.logo,
-          font: input.template === "modern" ? "serif" : "sans",
-        },
-      })
-      .select("id")
-      .single();
-    if (error) throw error;
-    id = data.id;
+    const domain = z
+      .union([z.uuid(), z.literal("")])
+      .parse(str(form, "domain_id"));
+    const { data, error } = await client.rpc("create_portal_with_domain", {
+      p_name: input.name,
+      p_slug: input.slug,
+      p_template: input.template,
+      p_settings: {
+        color: input.color,
+        accentColor: "#d5ff00",
+        logo: input.logo,
+        font: input.template === "modern" ? "serif" : "sans",
+      },
+      p_domain: domain || null,
+    });
+    if (error)
+      throw new Error(
+        "CMS:Não foi possível criar. Confira se o endereço e o domínio escolhido continuam disponíveis.",
+      );
+    id = data;
     const logoFile = form.get("logo_file");
     if (logoFile instanceof File && logoFile.size) {
       const upload = new FormData();
@@ -663,136 +666,22 @@ export async function removeRecord(form: FormData) {
   }
   finish(`/painel/${portal.id}/${paths[table]}`, message);
 }
-function formWithDomain(portalId: string, hostname: string) {
-  const f = new FormData();
-  f.set("portal_id", portalId);
-  f.set("hostname", hostname);
-  return f;
-}
 export async function checkDomainConnection(form: FormData) {
-  const { client, portal } = await requirePortal(str(form, "portal_id"));
-  const hostname = domainSchema.parse(str(form, "hostname"));
-  const { data, error } = await client
-    .from("domains")
-    .select("id,hostname,verified,provider_status")
-    .eq("portal_id", portal.id)
-    .eq("hostname", hostname)
-    .single();
-  if (error || !data) return { error: "Domínio não encontrado neste portal." };
-  if (!process.env.VERCEL_API_TOKEN)
-    return {
-      domain: data,
-      error:
-        "Domínio salvo. A conexão automática precisa ser ativada pelo responsável pela plataforma.",
-      automatic: false,
-    };
-  if (
-    data.provider_status?.checked_at &&
-    Date.now() - new Date(data.provider_status.checked_at).getTime() < 20000
-  )
-    return { domain: data, automatic: true };
-  try {
-    const state = await resolveDomain(
-      hostname,
-      process.env.VERCEL_PROJECT_ID || "",
-      vercel,
-    );
-    const service = await serviceClient();
-    const update = await service
-      .from("domains")
-      .update(state)
-      .eq("id", data.id)
-      .eq("portal_id", portal.id);
-    if (update.error) throw update.error;
-    return { domain: { ...data, ...state }, automatic: true };
-  } catch (e) {
-    return { domain: data, error: issue(e), automatic: false };
-  }
+  return verifyManagedDomain(form);
 }
 export async function addDomain(form: FormData) {
-  const { client, portal } = await requirePortal(str(form, "portal_id"));
-  let message = "Domínio cadastrado. Configure o DNS e verifique.";
-  try {
-    const rawHostname = str(form, "hostname").trim().toLowerCase();
-    const hostname = domainSchema.parse(
-      rawHostname.startsWith("https://") || rawHostname.startsWith("http://")
-        ? new URL(rawHostname).hostname
-        : rawHostname.replace(/\/$/, ""),
-    );
-    const { data: existing, error: readError } = await client
-      .from("domains")
-      .select("id")
-      .eq("hostname", hostname)
-      .maybeSingle();
-    if (readError || existing)
-      throw new Error("CMS:Domínio indisponível ou já cadastrado.");
-    // Reserve globally before the external request; failed provisioning is safe to retry via verify.
-    const { error } = await client.from("domains").insert({
-      hostname,
-      portal_id: portal.id,
-      organization_id: portal.organization_id,
-    });
-    if (error) throw error;
-    const result = await checkDomainConnection(
-      formWithDomain(portal.id, hostname),
-    );
-    if (result.error) throw new Error(`CMS:${result.error}`);
-    message = result.domain?.verified
-      ? "Domínio conectado ao portal."
-      : "Domínio salvo. Copie os registros abaixo; a conexão será verificada automaticamente nesta página.";
-  } catch (e) {
-    message = issue(e);
-  }
-  finish(`/painel/${portal.id}/dominios`, message);
+  return registerDomain(form);
 }
 export async function verifyDomain(form: FormData) {
-  const { client, portal } = await requirePortal(str(form, "portal_id"));
-  let message = "DNS consultado.";
-  try {
-    const id = z.uuid().parse(str(form, "id"));
-    const { data, error } = await client
-      .from("domains")
-      .select("*")
-      .eq("id", id)
-      .eq("portal_id", portal.id)
-      .single();
-    if (error) throw error;
-    const result = await checkDomainConnection(
-      formWithDomain(portal.id, data.hostname),
-    );
-    if (result.error) throw new Error(`CMS:${result.error}`);
-    message = result.domain?.verified
-      ? "Domínio conectado. A conexão segura será ativada automaticamente."
-      : "DNS ainda pendente. Acompanhe a verificação automática nesta página.";
-  } catch (e) {
-    message = issue(e);
-  }
-  finish(`/painel/${portal.id}/dominios`, message);
+  const result = await verifyManagedDomain(form);
+  finish(
+    `/painel/${str(form, "portal_id")}/dominios`,
+    result.error ||
+      (result.domain?.verified
+        ? "Domínio conectado."
+        : "DNS pendente. A verificação continua automaticamente nesta página."),
+  );
 }
 export async function deleteDomain(form: FormData) {
-  const { client, portal } = await requirePortal(str(form, "portal_id"));
-  let message = "Domínio desconectado.";
-  try {
-    const { data, error } = await client
-      .from("domains")
-      .select("id,hostname")
-      .eq("id", z.uuid().parse(str(form, "id")))
-      .eq("portal_id", portal.id)
-      .single();
-    if (error) throw error;
-    if (process.env.VERCEL_API_TOKEN)
-      await vercel(
-        `/v9/projects/${encodeURIComponent(process.env.VERCEL_PROJECT_ID || "")}/domains/${encodeURIComponent(data.hostname)}`,
-        { method: "DELETE", allow404: true },
-      );
-    const result = await client
-      .from("domains")
-      .delete()
-      .eq("id", data.id)
-      .eq("portal_id", portal.id);
-    if (result.error) throw result.error;
-  } catch (e) {
-    message = issue(e);
-  }
-  finish(`/painel/${portal.id}/dominios`, message);
+  return releaseDomain(form);
 }

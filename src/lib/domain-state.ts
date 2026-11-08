@@ -1,6 +1,7 @@
 export type DomainRecord = { type: string; name: string; value: string };
 export type DomainStatus = {
   checked_at?: string;
+  last_error?: string;
   misconfigured?: boolean;
   apexName?: string;
   verification?: { type: string; domain: string; value: string }[];
@@ -76,7 +77,7 @@ export async function resolveDomain(
       `/v9/projects/${projectPath}/domains/${host}/verify`,
       { method: "POST", allowPendingVerification: true },
     );
-    if (verification) domain = verification;
+    if (verification) domain = { ...domain, ...verification };
   }
   const config = await api(
     `/v6/domains/${host}/config?projectIdOrName=${projectPath}`,

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { vercel } from "@/lib/vercel";
 export async function deletePortal(
   _previous: { error: string },
   form: FormData,
@@ -24,38 +23,7 @@ export async function deletePortal(
     return { error: "Portal não encontrado ou acesso não autorizado." };
   if (input.data.confirmation !== portal.data.name)
     return { error: "O nome informado não corresponde ao portal." };
-  const domains = await client
-    .from("domains")
-    .select("hostname")
-    .eq("portal_id", portal.data.id)
-    .eq("organization_id", membership.organization_id);
-  if (domains.error)
-    return {
-      error:
-        "Não foi possível conferir os endereços deste portal. Tente novamente.",
-    };
-  try {
-    const platformHost = process.env.APP_URL
-      ? new URL(process.env.APP_URL).hostname
-      : "influentecms.vercel.app";
-    for (const domain of domains.data || []) {
-      if (
-        domain.hostname === platformHost ||
-        domain.hostname.endsWith(".vercel.app") ||
-        domain.hostname === process.env.PORTAL_BASE_DOMAIN
-      )
-        continue;
-      await vercel(
-        `/v9/projects/${encodeURIComponent(process.env.VERCEL_PROJECT_ID || "")}/domains/${encodeURIComponent(domain.hostname)}`,
-        { method: "DELETE", allow404: true },
-      );
-    }
-  } catch {
-    return {
-      error:
-        "Não foi possível desconectar os domínios. O portal foi preservado. Tente novamente em instantes.",
-    };
-  }
+  // The registry retains domains and releases their portal binding atomically on delete.
   const removed = await client
     .from("portals")
     .delete()
