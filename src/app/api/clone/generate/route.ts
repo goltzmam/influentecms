@@ -15,6 +15,9 @@ export async function POST(request:Request) {
   if(start.error)throw new ApiFailure(/ai_rate_limit/.test(start.error.message)?429:409,/ai_rate_limit/.test(start.error.message)?"Limite de criações atingido. Aguarde para importar novamente.":"Já existe um projeto em processamento. Aguarde e tente novamente.");
   jobId=start.data;
   const result=await generateClone(parsed.data,request.signal);
+  const document=await auth.client.from("portal_clone_documents").insert({organization_id:auth.organizationId,job_id:jobId,source_url:result.document.sourceUrl,draft:result.document,published:result.document}).select("id").single();
+  if(document.error)throw new ApiFailure(500,"Não foi possível salvar a estrutura importada.");
+  if(result.plan.clone)result.plan.clone.documentId=document.data.id;
   const saved=await auth.client.rpc("finish_portal_ai_job",{p_job:jobId,p_plan:result.plan,p_model:result.model,p_references:result.references,p_warnings:result.warnings,p_failed:false});
   if(saved.error)throw new ApiFailure(500,"Não foi possível salvar a importação. Consulte o histórico antes de tentar novamente.");
   return Response.json({jobId,plan:result.plan,references:result.references,warnings:result.warnings},{headers:{"Cache-Control":"no-store"}});

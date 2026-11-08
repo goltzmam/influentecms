@@ -1,6 +1,7 @@
 import type { Advertising, AdSlot } from "./advertising";
 import type { Experience, MenuItem, Creative } from "./experience";
 export type Settings = {
+  cloneDocumentId?: string;
   advertising?: Advertising;
   logo?: string;
   favicon?: string;

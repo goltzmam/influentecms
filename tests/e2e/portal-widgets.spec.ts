@@ -498,3 +498,15 @@ test("Cabeçalho compacto: menu burger, horizontal, oculto, busca com presets e 
       await page.screenshot({ path: "/tmp/influente-header-mobile.png" });
   }
 });
+
+test("Menu e rodapé salvos em Personalização substituem design antigo da Homepage",async({page})=>{
+ const row=await admin.from("portals").select("settings").eq("id",portal).single();if(row.error)throw row.error;
+ await admin.from("portals").update({design_draft:{settings:{experience:{navigation:{layout:"horizontal"},footer:{layout:"columns"}}},template:"daily"}}).eq("id",portal);
+ await page.goto("/login");await page.getByLabel("E-mail",{exact:true}).fill(email);await page.getByLabel("Senha",{exact:true}).fill(password);await page.getByRole("button",{name:"Entrar no painel"}).click();await expect(page).toHaveURL(/\/painel$/);
+ await page.goto(`/painel/${portal}/aparencia`);await page.getByLabel("Formato do menu",{exact:true}).selectOption("sidebar");
+ await page.getByRole("tab",{name:"Rodapé",exact:true}).click();await page.getByLabel("Composição do rodapé",{exact:true}).selectOption("centered");
+ await page.getByRole("button",{name:"Salvar personalização",exact:true}).click();await expect(page.getByText("Personalização salva.",{exact:true})).toBeVisible();await page.reload();
+ await expect(page.getByLabel("Formato do menu",{exact:true})).toHaveValue("sidebar");await page.getByRole("tab",{name:"Rodapé",exact:true}).click();await expect(page.getByLabel("Composição do rodapé",{exact:true})).toHaveValue("centered");
+ const saved=await admin.from("portals").select("settings,design_draft").eq("id",portal).single();expect(saved.data?.settings.experience.navigation.layout).toBe("sidebar");expect(saved.data?.settings.experience.footer.layout).toBe("centered");expect(saved.data?.design_draft).toBeNull();
+ await page.goto(`/painel/${portal}/homepage`);await page.getByRole("tab",{name:"Identidade",exact:true}).click();await expect(page.getByLabel("Formato do menu",{exact:true})).toHaveValue("sidebar");
+});

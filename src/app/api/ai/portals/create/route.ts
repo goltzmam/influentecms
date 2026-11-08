@@ -96,6 +96,10 @@ export async function POST(request: Request) {
           "O domínio não está disponível. Escolha outro endereço.",
         );
     }
+    if (plan.clone?.documentId) {
+      const bound=await auth.client.from("portal_clone_documents").update({portal_id:portalId}).eq("id",plan.clone.documentId).eq("organization_id",auth.organizationId).eq("job_id",job.id).select("id").single();
+      if(bound.error)throw new ApiFailure(503,"O portal foi criado, mas o layout original precisa ser vinculado. Tente concluir novamente.");
+    }
     const claim = await auth.client.rpc("claim_ai_visuals", { p_job: job.id });
     if (claim.error)
       throw new ApiFailure(

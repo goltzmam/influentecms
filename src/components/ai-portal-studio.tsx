@@ -1,4 +1,5 @@
 "use client";
+import { CloneFrame } from "./clone-frame";
 import { DomainPicker, type AvailableDomain } from "./domain-picker";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -93,7 +94,7 @@ function Preview({
           if ((e.target as HTMLElement).closest("a")) e.preventDefault();
         }}
       >
-        <NewsShell
+        {plan.clone?.documentId ? <CloneFrame src={`/api/clone/documents/${plan.clone.documentId}`} title="Prévia da estrutura original" /> : <NewsShell
           portal={portal}
           categories={categories}
           campaigns={[]}
@@ -109,7 +110,7 @@ function Preview({
             basePath="#previa"
             sections={sections}
           />
-        </NewsShell>
+        </NewsShell>}
       </div>
     </div>
   );
@@ -344,7 +345,7 @@ export function AiPortalStudio({
               <span>01</span>
               <h2>{cloneMode ? "Cole o endereço de referência" : "Descreva seu próximo portal"}</h2>
             </div>
-            {cloneMode && <div className="clone-source-fields"><label>Endereço do portal<input aria-label="Endereço do portal de referência" type="text" inputMode="url" required maxLength={1500} placeholder="portal.com.br" value={cloneUrl} onChange={e=>setCloneUrl(e.target.value.trim())} disabled={busy} /></label><label>Nome do novo portal<input aria-label="Nome do novo portal" maxLength={120} placeholder="Manter o nome da referência" value={cloneName} onChange={e=>setCloneName(e.target.value)} disabled={busy} /></label><p className="field-hint">A capa, até 6 notícias e até 5 páginas vinculadas são convertidas em blocos editáveis. Você revisa antes de publicar.</p></div>}
+            {cloneMode && <div className="clone-source-fields"><label>Endereço do portal<input aria-label="Endereço do portal de referência" type="text" inputMode="url" required maxLength={1500} placeholder="portal.com.br" value={cloneUrl} onChange={e=>setCloneUrl(e.target.value.trim())} disabled={busy} /></label><label>Nome do novo portal<input aria-label="Nome do novo portal" maxLength={120} placeholder="Manter o nome da referência" value={cloneName} onChange={e=>setCloneName(e.target.value)} disabled={busy} /></label><p className="field-hint">A estrutura da capa é preservada, com seus banners, grades, cabeçalho e rodapé. Textos, imagens e elementos ficam editáveis na prévia.</p></div>}
             <label htmlFor="ai-brief">{cloneMode ? "O que deseja adaptar? (opcional)" : "O que vamos criar?"}</label>
             <textarea
               id="ai-brief"
@@ -616,7 +617,7 @@ export function AiPortalStudio({
                     />
                   </label>
                 </div>
-                <label>
+                {!result.plan.clone?.documentId && <><label>
                   Assinatura da marca
                   <input
                     value={edits.tagline}
@@ -664,10 +665,11 @@ export function AiPortalStudio({
                       />
                     </label>
                   ))}
-                </div>
+                </div></>}
+                {result.plan.clone?.documentId && <p className="field-hint">A estrutura original será preservada. Logo, cores, textos, imagens e menus são alterados diretamente na prévia do editor após criar o portal.</p>}
               </section>
               <section className="panel">
-                <h2>Arquitetura da homepage</h2>
+                <h2>{result.plan.clone?.documentId ? "Conteúdo disponível no CMS" : "Arquitetura da homepage"}</h2>
                 <div className="ai-taxonomy">
                   {result.plan.categories.map((c) => (
                     <span key={c.slug}>{c.name}</span>

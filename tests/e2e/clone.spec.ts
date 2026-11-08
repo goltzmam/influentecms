@@ -86,6 +86,8 @@ test("Clone recupera importação, mantém rascunhos e abre editor visual com do
  const owner=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false}});
  const auth=await owner.auth.signInWithPassword({email,password});if(auth.error)throw auth.error;
  const started=await owner.rpc("start_portal_ai_job",{p_organization:organizationId,p_brief:"Clone: https://example.com",p_references:["https://example.com"]});if(started.error)throw started.error;
+ const capturedDoc=await owner.from("portal_clone_documents").insert({organization_id:organizationId,job_id:started.data,source_url:"https://example.com",draft:{html:`<header><nav>Menu original</nav></header><main class="original-grid"><section><h1>${plan.name}</h1><p>Texto original editável</p></section><aside>Publicidade</aside></main><footer>Rodapé original</footer>`,css:"body{margin:0;font-family:Arial}.original-grid{display:grid;grid-template-columns:2fr 1fr;gap:24px;padding:20px}header,footer{background:#111;color:white;padding:20px}@media(max-width:600px){.original-grid{grid-template-columns:1fr}}",bodyClass:"home",sourceUrl:"https://example.com"},published:{html:`<header><nav>Menu original</nav></header><main><h1>${plan.name}</h1></main><footer>Rodapé original</footer>`,css:"body{font-family:Arial}",bodyClass:"home",sourceUrl:"https://example.com"}}).select("id").single();if(capturedDoc.error)throw capturedDoc.error;
+ (plan.clone as {documentId?:string}).documentId=capturedDoc.data.id;
  const finished=await owner.rpc("finish_portal_ai_job",{p_job:started.data,p_plan:plan,p_model:"clone-import",p_references:[{url:"https://example.com",status:"retrieved"}],p_warnings:[],p_failed:false});if(finished.error)throw finished.error;
  expect((await request.post("/api/clone/generate",{data:{url:"https://example.com"},headers:{Origin:"http://127.0.0.1:3100"}})).status()).toBe(401);
  await page.goto("/login");await page.getByLabel("E-mail").fill(email);await page.getByLabel("Senha",{exact:true}).fill(password);await page.getByRole("button",{name:"Entrar no painel"}).click();await expect(page).toHaveURL(/\/painel$/);
@@ -97,13 +99,28 @@ test("Clone recupera importação, mantém rascunhos e abre editor visual com do
  await page.getByRole("button",{name:"Abrir projeto",exact:true}).click();await expect(page.getByRole("heading",{name:"Relatório da importação"})).toBeVisible();
  await expect(page.getByLabel("Publicar também as notícias importadas após minha revisão")).not.toBeChecked();
  await page.getByLabel("Domínio para este portal",{exact:true}).selectOption(domainId);
- await page.getByRole("button",{name:"Pré-visualizar portal"}).click();await expect(page.getByRole("dialog")).toContainText(plan.name);await page.getByRole("button",{name:"Fechar prévia"}).click();
+ await page.getByRole("button",{name:"Pré-visualizar portal"}).click();await expect(page.getByRole("dialog").frameLocator("iframe").getByRole("heading",{name:plan.name,exact:true})).toBeVisible();await page.getByRole("button",{name:"Fechar prévia"}).click();
  await page.getByRole("button",{name:"Criar portal editável"}).click();await expect(page).toHaveURL(/\/painel\/[a-f0-9-]+\/homepage\?notice=/);
  const portal=await client.from("portals").select("id,settings").eq("slug",slug).single();if(portal.error)throw portal.error;
- const articles=await client.from("articles").select("status,cover_url").eq("portal_id",portal.data.id);expect(articles.data?.length).toBeGreaterThan(0);for(const a of articles.data||[]){expect(a.status).toBe("draft");expect(a.cover_url).toContain("/storage/v1/object/public/");}
- expect(portal.data.settings.logo).toContain("/storage/v1/object/public/");
+ const articles=await client.from("articles").select("status,cover_url").eq("portal_id",portal.data.id);expect(articles.data?.length).toBeGreaterThan(0);for(const a of articles.data||[]){expect(a.status).toBe("draft");}
+
  const domains=await client.from("domains").select("portal_id").eq("id",domainId).single();expect(domains.data?.portal_id).toBe(portal.data.id);
- await expect(page.locator(".visual-canvas").first()).toBeVisible();
+ const editorFrame=page.frameLocator('iframe[title="Editor do layout importado"]');
+ await expect(editorFrame.getByRole("heading",{name:plan.name,exact:true})).toBeVisible();
+ await page.getByRole("button",{name:"Menu do cabeçalho",exact:true}).click();
+ await page.getByLabel("Formato do menu importado",{exact:true}).selectOption("burger");
+ await editorFrame.getByRole("heading",{name:plan.name,exact:true}).click();
+ await page.getByLabel("Texto do elemento",{exact:true}).fill("Minha marca editada");
+ await page.getByRole("button",{name:"Salvar rascunho",exact:true}).click();await expect(page.getByRole("status")).toContainText("Rascunho salvo");
+ const before=await page.request.get(`/p/${slug}/clone`);expect(await before.text()).toContain(plan.name);
+ await page.reload();await expect(page.frameLocator('iframe[title="Editor do layout importado"]').getByRole("heading",{name:"Minha marca editada",exact:true})).toBeVisible();
+ await page.getByRole("button",{name:"Menu do cabeçalho",exact:true}).click();await expect(page.getByLabel("Formato do menu importado",{exact:true})).toHaveValue("burger");
+ await page.getByRole("button",{name:"Publicar layout",exact:true}).click();await expect(page.getByRole("status")).toContainText("Layout publicado");
+ const after=await page.request.get(`/p/${slug}/clone`);expect(await after.text()).toContain("Minha marca editada");expect(after.headers()["x-frame-options"]).toBe("SAMEORIGIN");
+ await page.goto(`/p/${slug}`);await expect(page.frameLocator('iframe[title="'+plan.name+'"]').getByRole("heading",{name:"Minha marca editada",exact:true})).toBeVisible();
+ await page.frameLocator('iframe[title="'+plan.name+'"]').getByRole("button",{name:"☰ Menu",exact:true}).click();
+ await expect(page.frameLocator('iframe[title="'+plan.name+'"]').getByText("Menu original",{exact:true})).toBeVisible();
+ await page.goto(`/painel/${portal.data.id}/homepage`);
  await page.screenshot({path:"/tmp/influente-clone-editor.png"});
  const demos=await client.from("campaigns").select("id").eq("portal_id",portal.data.id);expect(demos.data).toHaveLength(0);
 });

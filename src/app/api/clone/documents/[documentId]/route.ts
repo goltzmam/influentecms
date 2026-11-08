@@ -1,0 +1,3 @@
+import {apiOwner,apiError,ApiFailure} from "@/lib/ai/access";
+import {renderDocument} from "@/lib/clone/document";
+export async function GET(request:Request,{params}:{params:Promise<{documentId:string}>}){try{const auth=await apiOwner(request);const {documentId}=await params;const result=await auth.client.from("portal_clone_documents").select("draft").eq("id",documentId).eq("organization_id",auth.organizationId).single();if(result.error)throw new ApiFailure(404,"Prévia não encontrada.");const token=new URL(request.url).searchParams.get("token")?.match(/^[a-f0-9-]{36}$/)?.[0]||crypto.randomUUID();return new Response(renderDocument(result.data.draft,token),{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store"}});}catch(e){return apiError(e);}}

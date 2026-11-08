@@ -36,6 +36,7 @@ export const linkSchema = z
     "Use URL HTTPS ou caminho local",
   );
 export const settingsSchema = z.object({
+  cloneDocumentId: z.uuid().optional(),
   advertising: advertisingSchema.optional(),
   experience: experienceSchema.optional(),
   logo: imageSchema,

@@ -1,3 +1,4 @@
+import { CloneEditor } from "@/components/clone-editor";
 import { PortalDeletion } from "@/components/portal-deletion";
 import { assignDomain } from "../../domain-actions";
 import { DomainPicker } from "@/components/domain-picker";
@@ -114,7 +115,7 @@ export default async function PortalAdmin({
   searchParams,
 }: {
   params: Promise<{ portalId: string; section?: string[] }>;
-  searchParams: Promise<{ notice?: string; q?: string; status?: string }>;
+  searchParams: Promise<{ notice?: string; q?: string; status?: string; modo?: string }>;
 }) {
   const { portalId, section = [] } = await params;
   const query = await searchParams;
@@ -403,6 +404,7 @@ export default async function PortalAdmin({
       </div>
     );
   } else if (key === "aparencia") {
+    if(portal.settings.cloneDocumentId && query.modo!=="seo") return <CloneEditor portalId={portalId} publicUrl={publicUrl} />;
     const s = presentationSettings(portal.settings, portal.template);
     body = (
       <form action={saveSettings}>
@@ -474,6 +476,7 @@ export default async function PortalAdmin({
             </section>
             <AppearanceDetails portalId={portalId} settings={s} />
             <ExperienceEditor
+              key={JSON.stringify(s.experience)}
               portalId={portalId}
               value={s.experience || {}}
               sections={portal.home_published}
@@ -495,7 +498,7 @@ export default async function PortalAdmin({
                   </option>
                 </select>
               </label>
-              <MenuEditor name="menus" value={s.menus} />
+              <MenuEditor key={JSON.stringify(s.menus)} name="menus" value={s.menus} />
             </section>
             <section className="panel">
               <h2>Redes sociais</h2>
@@ -532,6 +535,7 @@ export default async function PortalAdmin({
       </form>
     );
   } else if (key === "homepage") {
+    if(portal.settings.cloneDocumentId) return <CloneEditor portalId={portalId} publicUrl={publicUrl} />;
     const design = await client.rpc("get_home_design", { target: portalId });
     const library = await client
       .from("media")
@@ -566,6 +570,7 @@ export default async function PortalAdmin({
       throw new Error("Não foi possível carregar o editor.");
     body = (
       <HomeBuilder
+        key={portalId + JSON.stringify(design.data || {})}
         draftDesign={design.data || undefined}
         media={library.data || []}
         portalId={portalId}

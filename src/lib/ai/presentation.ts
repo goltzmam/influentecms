@@ -1,4 +1,5 @@
 import "server-only";
+import {mirrorCloneImages} from "../clone/mirror";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AiBlueprint } from "./schema";
 import type { Section, Settings } from "../types";
@@ -9,6 +10,13 @@ export async function completeAiPresentation(
   portalId: string,
   plan: AiBlueprint,
 ) {
+  if(plan.clone?.documentId) {
+    const row=await client.from("portal_clone_documents").select("draft,revision").eq("id",plan.clone.documentId).eq("portal_id",portalId).single();if(row.error)throw row.error;
+    const mirrored=await mirrorCloneImages(client,organizationId,portalId,row.data.draft);
+    const saved=await client.from("portal_clone_documents").update({draft:mirrored.document,published:mirrored.document}).eq("id",plan.clone.documentId).eq("revision",row.data.revision);if(saved.error)throw saved.error;
+    for(const [slug,url] of Object.entries(plan.clone.covers)){const cover=mirrored.replacements.get(url)||url;if(cover){const result=await client.from("articles").update({cover_url:cover,cover_alt:"Imagem da referência importada."}).eq("portal_id",portalId).eq("slug",slug).eq("cover_url","");if(result.error)throw result.error;}}
+    return {warnings:mirrored.warnings,ready:true,generatedImages:0,illustrations:0};
+  }
   const assets = await createBrandAssets(
       client,
       organizationId,

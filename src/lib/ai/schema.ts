@@ -58,6 +58,7 @@ export const briefSchema = z.object({
 export const blueprintShape = z.object({
   clone: z.object({
     url: referenceUrl,
+    documentId: z.uuid().optional(),
     logo: z.string().max(2000),
     favicon: z.string().max(2000),
     socials: z.array(z.string().max(2000)).max(6),
@@ -267,6 +268,7 @@ export function creationPayload(input: AiBlueprint) {
     slug: plan.slug,
     template: plan.template,
     settings: {
+      ...(plan.clone?.documentId ? {cloneDocumentId:plan.clone.documentId} : {}),
       experience: {
         contact: {
           mode: "compact",

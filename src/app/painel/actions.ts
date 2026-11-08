@@ -249,7 +249,7 @@ export async function saveSettings(form: FormData) {
       .parse(str(form, "template"));
     const { error } = await client
       .from("portals")
-      .update({ name, template, settings })
+      .update({ name, template, settings, design_draft: null })
       .eq("id", portal.id);
     if (error) throw error;
   } catch (e) {

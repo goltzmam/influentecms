@@ -290,6 +290,7 @@ export default async function PublicPage({ params, searchParams }: Props) {
   } else notFound();
   return (
     <NewsShell
+      clonePath={segments.join("/")}
       portal={portal}
       {...data}
       basePath={basePath}

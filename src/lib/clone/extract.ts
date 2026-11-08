@@ -15,7 +15,7 @@ export function extractPage(html:string, base:string) {
   const h1 = nodes("h1")[0];
   const main = nodes("article")[0] || nodes("main")[0] || root;
   const paragraphs = nodes("p",main.children).map(text).filter(t=>t.length>40).slice(0,45);
-  const imageOf = (e:Element) => {const img=nodes("img",e.children)[0];return img ? absolute(img.attribs["data-src"] || img.attribs.src || img.attribs["data-lazy-src"]) : "";};
+  const imageOf = (e:Element) => {const img=nodes("img",e.children)[0];return img ? absolute(img.attribs["data-img-url"] || img.attribs["data-src"] || img.attribs.src || img.attribs["data-lazy-src"]) : "";};
   const logoNode = nodes("img").find(e=>/logo|brand|marca/i.test([e.attribs.alt,e.attribs.class,e.attribs.id,e.attribs.src].join(" ")));
   const logo = logoNode ? absolute(logoNode.attribs["data-src"] || logoNode.attribs.src) : "";
   const favicon = nodes("link").find(e=> /^(shortcut )?icon$/i.test(e.attribs.rel));

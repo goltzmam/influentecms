@@ -32,6 +32,13 @@ const config: NextConfig = {
           },
         ],
       },
+      ...["/api/portals/:portalId/clone", "/api/clone/documents/:documentId", "/p/:slug/clone", "/clone"].map(source => ({
+        source,
+        headers: [
+          {key: "X-Frame-Options", value: "SAMEORIGIN"},
+          {key: "Content-Security-Policy", value: "frame-ancestors 'self'"},
+        ],
+      })),
     ];
   },
 };

@@ -1,3 +1,4 @@
+import { CloneFrame } from "./clone-frame";
 import { PortalHeader } from "./portal-header";
 import { PortalWidget, PortalWidgets } from "./portal-widgets";
 import { widgetPosition, widgetEnabled } from "@/lib/widgets";
@@ -218,6 +219,7 @@ export function NewsShell({
   children,
   preview = false,
   isHomepage = true,
+  clonePath,
 }: {
   portal: Portal;
   categories: Category[];
@@ -227,8 +229,10 @@ export function NewsShell({
   children: React.ReactNode;
   preview?: boolean;
   isHomepage?: boolean;
+  clonePath?: string;
 }) {
   const s = presentationSettings(portal.settings, portal.template);
+  if (s.cloneDocumentId && (isHomepage || clonePath?.startsWith("noticia/") || clonePath?.startsWith("pagina/"))) return <CloneFrame src={`${basePath}/clone${!isHomepage&&clonePath ? `?path=${encodeURIComponent(clonePath)}` : ""}`} title={portal.name} />;
   const boundIds = new Set(
     (portal.home_published || []).flatMap((section) =>
       (section.adSlots || []).map((slot) => slot.campaignId).filter(Boolean),
