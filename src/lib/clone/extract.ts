@@ -25,7 +25,14 @@ export function extractPage(html:string, base:string) {
   const articleCards = all.filter(e=>/^(article|a)$/.test(e.name)).map(e=>{
     const link=e.name==="a"?e:nodes("a",e.children)[0];
     const h=[...nodes("h2",e.children),...nodes("h3",e.children)][0];
-    return {title:clean(h?text(h):link?.attribs.title || "",200),url:absolute(link?.attribs.href),image:imageOf(e)};
+    const editorial = /feed-post-link|headline|story|news-link|article-link/i.test(link?.attribs.class || "") || /^(h1|h2|h3)$/.test(link?.parent && "name" in link.parent ? String(link.parent.name) : "");
+    const title=clean(h?text(h):link?.attribs.title || (editorial && link ? text(link) : ""),200);
+    if(title.length<16) return {title:"",url:"",image:""};
+    let image = imageOf(e), parent = e.parent;
+    for(let depth=0; !image && parent && depth<4; depth++,parent=parent.parent) {
+      if("name" in parent) image=imageOf(parent as Element);
+    }
+    return {title,url:absolute(link?.attribs.href),image};
   }).filter(a=>a.title.length>15 && a.url && new URL(a.url).origin===new URL(base).origin && new URL(a.url).pathname!==new URL(base).pathname).filter((a,i,list)=>list.findIndex(b=>b.url===a.url)===i).slice(0,6);
   const pageLinks = nodes("a").map(e=>({title:clean(text(e),160),url:absolute(e.attribs.href)})).filter(a=>a.url && new URL(a.url).origin===new URL(base).origin && /sobre|quem-somos|contato|privacidade|termos/i.test(new URL(a.url).pathname)).filter((a,i,list)=>list.findIndex(b=>b.url===a.url)===i).slice(0,5);
   const css = nodes("style").map(e=>textContent(e)).join("\n")+all.map(e=>e.attribs.style||"").join(";");

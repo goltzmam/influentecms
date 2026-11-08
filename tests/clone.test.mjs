@@ -30,3 +30,8 @@ test('Clone mantém manchete como texto incompleto quando a notícia está bloqu
  const result=await generateClone({url:'https://example.com',refine:false},undefined,{read:async(url,kind)=>{if(url.includes('/noticia/'))throw Error();return read(url,kind);}});
  assert.match(result.plan.articles[0].body,/texto completo não pôde ser lido/);assert.ok(result.warnings.some(w=>w.includes('manchetes')));
 });
+
+test('Clone reconhece manchete cujo link está dentro de h2 e imagem irmã',()=>{
+ const p=extractPage('<main><div class="feed-post"><img src="/capa.jpg"><h2><a class="feed-post-link" href="/noticia/a">Uma notícia com título editorial sem heading dentro do link</a></h2></div></main>','https://example.com');
+ assert.equal(p.articleCards.length,1);assert.equal(p.articleCards[0].image,'https://example.com/capa.jpg');assert.ok(blueprintSchema.safeParse(baselineClone(p,[],[])).success);
+});
